@@ -8,11 +8,19 @@
 
 ## 技术栈
 
+### 后端
 - **Python 3.11+**: 开发语言
 - **uiautomator2**: 安卓设备自动化控制库
 - **FastAPI**: Web 框架
 - **Pydantic**: 数据验证和序列化
 - **uv**: Python 包管理工具
+
+### 前端
+- **Vue 3**: 前端框架
+- **Vite**: 构建工具
+- **Element Plus**: UI 组件库
+- **Tailwind CSS**: 样式框架
+- **@vicons/fa**: 图标库
 
 ## 项目结构
 
@@ -38,8 +46,34 @@
 │   │   └── app_service.py        # 应用管理服务
 │   ├── main.py                   # 应用入口
 │   └── __init__.py               # 模块初始化
-├── tests/                        # 测试文件
-├── frontend/                     # Vue 前端目录 (待开发)
+├── frontend/                     # Vue 前端源码
+│   ├── src/
+│   │   ├── api/                  # API 客户端
+│   │   │   ├── index.js          # API 导出
+│   │   │   ├── request.js        # Axios 实例
+│   │   │   ├── app.js            # 应用管理 API
+│   │   │   ├── device.js         # 设备相关 API
+│   │   │   ├── input.js          # 输入操作 API
+│   │   │   └── navigation.js     # 导航控制 API
+│   │   ├── components/           # Vue 组件
+│   │   │   ├── AppManager.vue    # 应用管理组件
+│   │   │   ├── DeviceCard.vue    # 设备状态组件
+│   │   │   ├── InputControl.vue  # 输入操作组件
+│   │   │   └── NavigationControl.vue # 导航控制组件
+│   │   ├── layouts/              # 布局组件
+│   │   │   └── DefaultLayout.vue
+│   │   ├── pages/                # 页面组件
+│   │   │   ├── Apps.vue          # 应用管理页
+│   │   │   ├── Dashboard.vue     # 仪表盘
+│   │   │   ├── Device.vue        # 设备页
+│   │   │   ├── Input.vue         # 输入操作页
+│   │   │   └── Navigation.vue    # 导航控制页
+│   │   ├── App.vue               # 根组件
+│   │   └── main.js               # 应用入口
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   └── package.json
 ├── pyproject.toml                # 项目配置
 ├── .env                          # 环境变量
 └── README.md                     # 项目说明
@@ -82,7 +116,16 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | POST | `/api/v1/input/set-text` | 输入文本 |
 | POST | `/api/v1/input/clear-text` | 清除文本 |
 | POST | `/api/v1/input/swipe` | 滑动屏幕 |
+| POST | `/api/v1/input/send-action` | 发送完成动作 |
 | POST | `/api/v1/input/execute` | 执行自定义操作 |
+
+### 输入操作 - 屏幕控制
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/v1/input/screen-on` | 亮屏 |
+| POST | `/api/v1/input/screen-off` | 锁屏 |
+| POST | `/api/v1/input/unlock` | 解锁屏幕 |
 
 ### 输入操作 - 元素定位
 
@@ -124,6 +167,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | POST | `/api/v1/app/clear/{package}` | 清除应用数据 |
 | GET | `/api/v1/app/version/{package}` | 获取应用版本 |
 | GET | `/api/v1/app/status/{package}` | 检查应用运行状态 |
+| GET | `/api/v1/app/current` | 获取当前前台应用 |
 
 ## 配置说明
 
@@ -180,6 +224,45 @@ curl "http://localhost:8000/api/v1/input/wait-appear?resource_id=com.example:id/
 # 等待元素消失（最多10秒）
 curl "http://localhost:8000/api/v1/input/wait-gone?resource_id=com.example:id/loading&timeout=10"
 ```
+
+### 屏幕控制
+
+```bash
+# 亮屏
+curl -X POST "http://localhost:8000/api/v1/input/screen-on"
+
+# 锁屏
+curl -X POST "http://localhost:8000/api/v1/input/screen-off"
+
+# 解锁
+curl -X POST "http://localhost:8000/api/v1/input/unlock"
+```
+
+### 获取当前应用
+
+```bash
+curl "http://localhost:8000/api/v1/app/current"
+```
+
+## 前端使用
+
+### 启动前端开发服务器
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 前端功能页面
+
+| 页面 | 路由 | 描述 |
+|------|------|------|
+| 仪表盘 | `/` | 设备状态总览 |
+| 设备管理 | `/device` | 设备连接状态 |
+| 输入控制 | `/input` | 点击、输入、滑动、元素定位、屏幕控制 |
+| 导航控制 | `/navigation` | 返回主页、返回、菜单等导航操作 |
+| 应用管理 | `/apps` | 启动、停止、清除应用数据 |
 
 ## 元素定位方式详解
 
