@@ -31,6 +31,114 @@ def click(resource_id: str = Query(..., description="元素的 resource-id"), in
     return ActionResponse(success=result, result={"clicked": resource_id})
 
 
+@router.post("/click-by-text", response_model=ActionResponse)
+def click_by_text(text: str = Query(..., description="元素的文本内容"), input_service: InputService = Depends(get_input_service)):
+    """
+    点击元素
+
+    通过 text 定位界面元素并执行点击操作。
+
+    Args:
+        text: 元素的文本内容。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.click_by_text(text)
+    return ActionResponse(success=result, result={"clicked": text})
+
+
+@router.post("/click-by-class", response_model=ActionResponse)
+def click_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+    """
+    点击元素
+
+    通过 className 定位界面元素并执行点击操作。
+
+    Args:
+        class_name: 元素的类名。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.click_by_class(class_name)
+    return ActionResponse(success=result, result={"clicked": class_name})
+
+
+@router.post("/click-by-xpath", response_model=ActionResponse)
+def click_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input_service: InputService = Depends(get_input_service)):
+    """
+    点击元素
+
+    通过 XPath 定位界面元素并执行点击操作。
+
+    Args:
+        xpath: XPath 表达式。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.click_by_xpath(xpath)
+    return ActionResponse(success=result, result={"clicked": xpath})
+
+
+@router.get("/exists-by-text", response_model=ActionResponse)
+def exists_by_text(text: str = Query(..., description="元素的文本内容"), input_service: InputService = Depends(get_input_service)):
+    """
+    检查元素是否存在
+
+    通过 text 判断指定元素是否存在于当前界面。
+
+    Args:
+        text: 元素的文本内容。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    exists = input_service.exists_by_text(text)
+    return ActionResponse(success=True, result={"exists": exists, "text": text})
+
+
+@router.get("/exists-by-class", response_model=ActionResponse)
+def exists_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+    """
+    检查元素是否存在
+
+    通过 className 判断指定元素是否存在于当前界面。
+
+    Args:
+        class_name: 元素的类名。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    exists = input_service.exists_by_class(class_name)
+    return ActionResponse(success=True, result={"exists": exists, "class_name": class_name})
+
+
+@router.get("/exists-by-xpath", response_model=ActionResponse)
+def exists_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input_service: InputService = Depends(get_input_service)):
+    """
+    检查元素是否存在
+
+    通过 XPath 判断指定元素是否存在于当前界面。
+
+    Args:
+        xpath: XPath 表达式。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    exists = input_service.exists_by_xpath(xpath)
+    return ActionResponse(success=True, result={"exists": exists, "xpath": xpath})
+
+
 @router.post("/set-text", response_model=ActionResponse)
 def set_text(
     resource_id: str = Query(..., description="元素的 resource-id"),

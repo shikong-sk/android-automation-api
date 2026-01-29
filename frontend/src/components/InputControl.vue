@@ -9,19 +9,29 @@
     
     <el-tabs v-model="activeTab">
       <el-tab-pane label="点击元素" name="click">
-        <el-input
-          v-model="resourceId"
-          placeholder="输入元素的 resource-id（如 com.example:id/button）"
-          clearable
-          class="mb-4"
-        />
-        <div class="flex gap-2">
-          <el-button type="primary" :disabled="!resourceId" @click="handleClick">
-            点击元素
-          </el-button>
-          <el-button :disabled="!resourceId" @click="handleExists">
-            检查存在
-          </el-button>
+        <div class="space-y-4">
+          <div class="flex gap-2">
+            <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
+              <el-option label="By ID" value="id" />
+              <el-option label="By Text" value="text" />
+              <el-option label="By Class" value="class" />
+              <el-option label="By XPath" value="xpath" />
+            </el-select>
+            <el-input
+              v-model="clickLocateValue"
+              :placeholder="clickPlaceholder"
+              clearable
+              class="flex-1"
+            />
+          </div>
+          <div class="flex gap-2">
+            <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
+              点击元素
+            </el-button>
+            <el-button :disabled="!clickLocateValue" @click="handleExists">
+              检查存在
+            </el-button>
+          </div>
         </div>
       </el-tab-pane>
       
@@ -178,13 +188,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
 import { Pen } from '@vicons/fa'
 
 const activeTab = ref('click')
-const resourceId = ref('')
+const clickLocateType = ref('id')
+const clickLocateValue = ref('')
 const textResourceId = ref('')
 const textInput = ref('')
 const swipeDirection = ref('up')
@@ -198,9 +209,33 @@ const infoResourceId = ref('')
 const elementInfo = ref(null)
 const hierarchyXml = ref('')
 
+const clickPlaceholder = computed(() => {
+  const placeholders = {
+    id: '输入元素的 resource-id（如 com.example:id/button）',
+    text: '输入元素的文本内容（如 确定）',
+    class: '输入元素的类名（如 android.widget.Button）',
+    xpath: '输入 XPath 表达式（如 //android.widget.Button[@text="确定"]）'
+  }
+  return placeholders[clickLocateType.value] || '输入定位值'
+})
+
 async function handleClick() {
   try {
-    const response = await inputApi.click(resourceId.value)
+    let response
+    switch (clickLocateType.value) {
+      case 'id':
+        response = await inputApi.click(clickLocateValue.value)
+        break
+      case 'text':
+        response = await inputApi.clickByText(clickLocateValue.value)
+        break
+      case 'class':
+        response = await inputApi.clickByClass(clickLocateValue.value)
+        break
+      case 'xpath':
+        response = await inputApi.clickByXpath(clickLocateValue.value)
+        break
+    }
     if (response.success) {
       ElMessage.success('点击成功')
     } else {
@@ -213,8 +248,23 @@ async function handleClick() {
 
 async function handleExists() {
   try {
-    const result = await inputApi.exists(resourceId.value)
-    if (result.exists) {
+    let response
+    switch (clickLocateType.value) {
+      case 'id':
+        response = await inputApi.exists(clickLocateValue.value)
+        break
+      case 'text':
+        response = await inputApi.existsByText(clickLocateValue.value)
+        break
+      case 'class':
+        response = await inputApi.existsByClass(clickLocateValue.value)
+        break
+      case 'xpath':
+        response = await inputApi.existsByXpath(clickLocateValue.value)
+        break
+    }
+    const exists = response.result?.exists ?? response.exists
+    if (exists) {
       ElMessage.success('元素存在')
     } else {
       ElMessage.warning('元素不存在')
@@ -289,7 +339,7 @@ async function handleFindAll() {
   try {
     const result = await inputApi.findElementsByClass(locateValue.value)
     locateResult.value = result
-    ElMessage.success(`找到 ${result.count} 个元素`)
+    ElMessage.success(`找到 ${result.elements?.length || result.count || 0} 个元素`)
   } catch (err) {
     ElMessage.error('查找失败')
     locateResult.value = null

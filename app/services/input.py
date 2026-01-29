@@ -36,7 +36,7 @@ class InputService(AutomationService):
         Returns:
             bool: 元素存在且清除成功返回 True，否则返回 False。
         """
-        element = self.device(resource_id=resource_id)
+        element = self.device(resourceId=resource_id)
         if element.exists:
             element.click()
             self.device.clear_text()
@@ -80,6 +80,111 @@ class InputService(AutomationService):
         if element.exists:
             element.click()
             return True
+        return False
+
+    def click_by_text(self, text: str) -> bool:
+        """
+        通过文本点击元素
+
+        通过 text 定位界面元素并执行点击操作。
+
+        Args:
+            text: 元素的文本内容。
+
+        Returns:
+            bool: 元素存在且点击成功返回 True，否则返回 False。
+        """
+        element = self.device(text=text)
+        if element.exists:
+            element.click()
+            return True
+        return False
+
+    def click_by_class(self, class_name: str) -> bool:
+        """
+        通过类名点击元素
+
+        通过 className 定位第一个匹配元素并执行点击操作。
+
+        Args:
+            class_name: 元素的类名。
+
+        Returns:
+            bool: 元素存在且点击成功返回 True，否则返回 False。
+        """
+        element = self.device(className=class_name)
+        if element.exists:
+            element.click()
+            return True
+        return False
+
+    def click_by_xpath(self, xpath: str) -> bool:
+        """
+        通过 XPath 点击元素
+
+        通过 XPath 定位界面元素并执行点击操作。
+
+        Args:
+            xpath: XPath 表达式。
+
+        Returns:
+            bool: 元素存在且点击成功返回 True，否则返回 False。
+        """
+        element = self.device(xpath=xpath)
+        if element.exists:
+            element.click()
+            return True
+        return False
+
+    def exists_by_text(self, text: str) -> bool:
+        """
+        检查文本元素是否存在
+
+        Args:
+            text: 元素的文本内容。
+
+        Returns:
+            bool: 元素存在返回 True，否则返回 False。
+        """
+        for _ in range(3):
+            element = self.device(text=text)
+            if element.exists:
+                return True
+            self.device.sleep(0.2)
+        return False
+
+    def exists_by_class(self, class_name: str) -> bool:
+        """
+        检查类名元素是否存在
+
+        Args:
+            class_name: 元素的类名。
+
+        Returns:
+            bool: 元素存在返回 True，否则返回 False。
+        """
+        for _ in range(3):
+            element = self.device(className=class_name)
+            if element.exists:
+                return True
+            self.device.sleep(0.2)
+        return False
+
+    def exists_by_xpath(self, xpath: str) -> bool:
+        """
+        检查 XPath 元素是否存在
+
+        Args:
+            xpath: XPath 表达式。
+
+        Returns:
+            bool: 元素存在返回 True，否则返回 False。
+        """
+        for _ in range(3):
+            element = self.device(xpath=xpath)
+            if element.exists:
+                return True
+            self.device.sleep(0.2)
         return False
 
     def click_exists(self, resource_id: str) -> bool:

@@ -5,6 +5,30 @@ export const inputApi = {
     return request.post('/input/click', null, { params: { resource_id: resourceId } })
   },
 
+  clickByText(text) {
+    return request.post('/input/click-by-text', null, { params: { text } })
+  },
+
+  clickByClass(className) {
+    return request.post('/input/click-by-class', null, { params: { class_name: className } })
+  },
+
+  clickByXpath(xpath) {
+    return request.post('/input/click-by-xpath', null, { params: { xpath } })
+  },
+
+  existsByText(text) {
+    return request.get('/input/exists-by-text', { params: { text } })
+  },
+
+  existsByClass(className) {
+    return request.get('/input/exists-by-class', { params: { class_name: className } })
+  },
+
+  existsByXpath(xpath) {
+    return request.get('/input/exists-by-xpath', { params: { xpath } })
+  },
+
   setText(resourceId, text) {
     return request.post('/input/set-text', null, { params: { resource_id: resourceId, text } })
   },
