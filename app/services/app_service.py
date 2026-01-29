@@ -95,3 +95,14 @@ class AppService(AutomationService):
             bool: 应用正在运行返回 True，否则返回 False。
         """
         return self.device.app_wait(package_name, timeout=1) is not None
+
+    def get_current_app(self) -> dict:
+        """
+        获取当前前台应用信息
+
+        返回当前正在前台运行的应用包名、Activity 名称和 PID。
+
+        Returns:
+            dict: 包含 package、activity、pid 的字典。
+        """
+        return self.device.app_current()

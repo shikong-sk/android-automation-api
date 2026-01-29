@@ -47,7 +47,7 @@ class InputService(AutomationService):
         """
         向指定元素输入文本
 
-        先点击元素，清除已有文本，等待片刻后输入新文本。
+        点击元素后使用 send_keys 输入文本内容。
 
         Args:
             resource_id: 元素的 resource-id 属性值。
@@ -59,9 +59,8 @@ class InputService(AutomationService):
         element = self.device(resourceId=resource_id)
         if element.exists:
             element.click()
-            self.device.clear_text()
-            self.device.sleep(0.5)
-            element.set_text(text)
+            self.device.sleep(0.3)
+            self.device.send_keys(text, clear=False)
             return True
         return False
 
@@ -69,13 +68,31 @@ class InputService(AutomationService):
         """
         点击指定元素
 
-        通过 resource-id 定位元素并执行点击操作。
+        通过 resource-id 定位界面元素并执行点击操作。
 
         Args:
             resource_id: 元素的 resource-id 属性值。
 
         Returns:
             bool: 元素存在且点击成功返回 True，否则返回 False。
+        """
+        element = self.device(resourceId=resource_id)
+        if element.exists:
+            element.click()
+            return True
+        return False
+
+    def click_exists(self, resource_id: str) -> bool:
+        """
+        点击元素（如果存在）
+
+        检查元素是否存在，存在则点击并返回 True，否则返回 False。
+
+        Args:
+            resource_id: 元素的 resource-id 属性值。
+
+        Returns:
+            bool: 元素存在且点击成功返回 True，元素不存在返回 False。
         """
         element = self.device(resourceId=resource_id)
         if element.exists:
@@ -116,16 +133,23 @@ class InputService(AutomationService):
             bool: 方向参数有效返回 True，无效返回 False。
         """
         direction = direction.lower()
+        width, height = self.device.info["displayWidth"], self.device.info["displayHeight"]
+        x1, y1, x2, y2 = 0, 0, 0, 0
         if direction == "up":
-            self.device.swipe_ext("up", percent=percent)
+            x1, y1 = width // 2, height * (1 - percent * 0.5)
+            x2, y2 = width // 2, height * percent * 0.5
         elif direction == "down":
-            self.device.swipe_ext("down", percent=percent)
+            x1, y1 = width // 2, height * percent * 0.5
+            x2, y2 = width // 2, height * (1 - percent * 0.5)
         elif direction == "left":
-            self.device.swipe_ext("left", percent=percent)
+            x1, y1 = width * (1 - percent * 0.5), height // 2
+            x2, y2 = width * percent * 0.5, height // 2
         elif direction == "right":
-            self.device.swipe_ext("right", percent=percent)
+            x1, y1 = width * percent * 0.5, height // 2
+            x2, y2 = width * (1 - percent * 0.5), height // 2
         else:
             return False
+        self.device.swipe(x1, y1, x2, y2)
         return True
 
     def find_element_by_id(self, resource_id: str) -> Optional[Dict[str, Any]]:
@@ -274,7 +298,7 @@ class InputService(AutomationService):
             bool: 元素存在返回 True，否则返回 False。
         """
         element = self.device(resourceId=resource_id)
-        return element.exists  # type: ignore
+        return bool(element.exists)
 
     def get_element_text(self, resource_id: str) -> Optional[str]:
         """
@@ -360,3 +384,75 @@ class InputService(AutomationService):
             str: 当前界面的 XML 字符串。
         """
         return self.device.dump_hierarchy()
+
+    def send_action(self, resource_id: str, action: str = "IME_ACTION_DONE") -> bool:
+        """
+        发送输入法完成动作
+
+        向指定元素发送完成动作（如 IME_ACTION_DONE）。
+
+        Args:
+            resource_id: 元素的 resource-id 属性值。
+            action: 动作类型，支持 IME_ACTION_DONE、IME_ACTION_SEARCH 等。
+
+        Returns:
+            bool: 操作是否成功。
+        """
+        element = self.device(resourceId=resource_id)
+        if element.exists:
+            try:
+                self.device.set_input_ime(True)
+                element.click()
+                self.device.press("enter")
+                self.device.set_input_ime(False)
+                return True
+            except Exception:
+                return False
+        return False
+
+    def screen_on(self) -> bool:
+        """
+        亮屏
+
+        唤醒设备屏幕。
+
+        Returns:
+            bool: 操作是否成功。
+        """
+        try:
+            self.device.screen_on()
+            return True
+        except Exception:
+            return False
+
+    def screen_off(self) -> bool:
+        """
+        锁屏
+
+        关闭设备屏幕。
+
+        Returns:
+            bool: 操作是否成功。
+        """
+        try:
+            self.device.screen_off()
+            return True
+        except Exception:
+            return False
+
+
+
+    def unlock_screen(self) -> bool:
+        """
+        解锁屏幕
+
+        解锁设备屏幕。
+
+        Returns:
+            bool: 操作是否成功。
+        """
+        try:
+            self.device.unlock()
+            return True
+        except Exception:
+            return False

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/input", tags=["Input"])
 
 
 @router.post("/click", response_model=ActionResponse)
-def click(resource_id: str, input_service: InputService = Depends(get_input_service)):
+def click(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
     """
     点击元素
 
@@ -74,8 +74,8 @@ def clear_text(resource_id: str = Query(..., description="元素的 resource-id"
 
 @router.post("/swipe", response_model=ActionResponse)
 def swipe(
-    direction: str,
-    percent: float = 0.5,
+    direction: str = Query(..., description="滑动方向（up/down/left/right）"),
+    percent: float = Query(0.5, description="滑动距离比例（0-1）"),
     input_service: InputService = Depends(get_input_service)
 ):
     """
@@ -306,3 +306,68 @@ def get_ui_hierarchy(input_service: InputService = Depends(get_input_service)):
     """
     xml = input_service.get_current_ui_xml()
     return {"xml": xml}
+
+
+@router.post("/screen-on", response_model=ActionResponse)
+def screen_on(input_service: InputService = Depends(get_input_service)):
+    """
+    亮屏
+
+    唤醒设备屏幕。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.screen_on()
+    return ActionResponse(success=result, result={"action": "screen_on"})
+
+
+@router.post("/screen-off", response_model=ActionResponse)
+def screen_off(input_service: InputService = Depends(get_input_service)):
+    """
+    锁屏
+
+    关闭设备屏幕。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.screen_off()
+    return ActionResponse(success=result, result={"action": "screen_off"})
+
+
+@router.post("/unlock", response_model=ActionResponse)
+def unlock_screen(input_service: InputService = Depends(get_input_service)):
+    """
+    解锁屏幕
+
+    解锁设备屏幕。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.unlock_screen()
+    return ActionResponse(success=result, result={"action": "unlock"})
+
+
+@router.post("/send-action", response_model=ActionResponse)
+def send_action(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    action: str = Query("IME_ACTION_DONE", description="动作类型"),
+    input_service: InputService = Depends(get_input_service)
+):
+    """
+    发送完成动作
+
+    向指定元素发送完成动作（如点击回车键）。
+
+    Args:
+        resource_id: 元素的 resource-id。
+        action: 动作类型，默认为 IME_ACTION_DONE。
+        input_service: InputService 实例（依赖注入）。
+
+    Returns:
+        ActionResponse: 操作结果响应。
+    """
+    result = input_service.send_action(resource_id, action)
+    return ActionResponse(success=result, result={"resource_id": resource_id, "action": action})

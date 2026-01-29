@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --el-color-primary: #409eff;
+  --el-color-success: #67c23a;
+  --el-color-warning: #e6a23c;
+  --el-color-danger: #f56c6c;
+  --el-color-info: #909399;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+#app {
+  height: 100vh;
+}

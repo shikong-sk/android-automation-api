@@ -99,3 +99,19 @@ def is_running(package_name: str, app_service: AppService = Depends(get_app_serv
     """
     running = app_service.is_app_running(package_name)
     return {"package": package_name, "running": running}
+
+
+@router.get("/current")
+def get_current_app(app_service: AppService = Depends(get_app_service)):
+    """
+    获取当前前台应用
+
+    查询当前正在前台运行的应用信息。
+
+    Args:
+        app_service: AppService 实例（依赖注入）。
+
+    Returns:
+        dict: 包含当前应用的包名、Activity 和 PID。
+    """
+    return app_service.get_current_app()
