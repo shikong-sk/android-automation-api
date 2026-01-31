@@ -14,7 +14,10 @@ router = APIRouter(prefix="/input", tags=["Input"])
 
 
 @router.post("/click", response_model=ActionResponse)
-def click(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def click(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     点击元素
 
@@ -32,7 +35,10 @@ def click(resource_id: str = Query(..., description="元素的 resource-id"), in
 
 
 @router.post("/click-by-text", response_model=ActionResponse)
-def click_by_text(text: str = Query(..., description="元素的文本内容"), input_service: InputService = Depends(get_input_service)):
+def click_by_text(
+    text: str = Query(..., description="元素的文本内容"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     点击元素
 
@@ -50,7 +56,10 @@ def click_by_text(text: str = Query(..., description="元素的文本内容"), i
 
 
 @router.post("/click-by-class", response_model=ActionResponse)
-def click_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+def click_by_class(
+    class_name: str = Query(..., description="元素的类名"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     点击元素
 
@@ -68,7 +77,10 @@ def click_by_class(class_name: str = Query(..., description="元素的类名"), 
 
 
 @router.post("/click-by-xpath", response_model=ActionResponse)
-def click_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input_service: InputService = Depends(get_input_service)):
+def click_by_xpath(
+    xpath: str = Query(..., description="XPath 表达式"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     点击元素
 
@@ -86,7 +98,10 @@ def click_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input
 
 
 @router.get("/exists-by-text", response_model=ActionResponse)
-def exists_by_text(text: str = Query(..., description="元素的文本内容"), input_service: InputService = Depends(get_input_service)):
+def exists_by_text(
+    text: str = Query(..., description="元素的文本内容"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     检查元素是否存在
 
@@ -104,7 +119,10 @@ def exists_by_text(text: str = Query(..., description="元素的文本内容"), 
 
 
 @router.get("/exists-by-class", response_model=ActionResponse)
-def exists_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+def exists_by_class(
+    class_name: str = Query(..., description="元素的类名"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     检查元素是否存在
 
@@ -122,7 +140,10 @@ def exists_by_class(class_name: str = Query(..., description="元素的类名"),
 
 
 @router.get("/exists-by-xpath", response_model=ActionResponse)
-def exists_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input_service: InputService = Depends(get_input_service)):
+def exists_by_xpath(
+    xpath: str = Query(..., description="XPath 表达式"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     检查元素是否存在
 
@@ -143,7 +164,7 @@ def exists_by_xpath(xpath: str = Query(..., description="XPath 表达式"), inpu
 def set_text(
     resource_id: str = Query(..., description="元素的 resource-id"),
     text: str = Query(..., description="要输入的文本"),
-    input_service: InputService = Depends(get_input_service)
+    input_service: InputService = Depends(get_input_service),
 ):
     """
     输入文本
@@ -163,7 +184,10 @@ def set_text(
 
 
 @router.post("/clear-text", response_model=ActionResponse)
-def clear_text(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def clear_text(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     清除文本
 
@@ -184,7 +208,7 @@ def clear_text(resource_id: str = Query(..., description="元素的 resource-id"
 def swipe(
     direction: str = Query(..., description="滑动方向（up/down/left/right）"),
     percent: float = Query(0.5, description="滑动距离比例（0-1）"),
-    input_service: InputService = Depends(get_input_service)
+    input_service: InputService = Depends(get_input_service),
 ):
     """
     滑动屏幕
@@ -204,7 +228,9 @@ def swipe(
 
 
 @router.post("/execute", response_model=ActionResponse)
-def execute_action(request: ActionRequest, input_service: InputService = Depends(get_input_service)):
+def execute_action(
+    request: ActionRequest, input_service: InputService = Depends(get_input_service)
+):
     """
     执行自定义操作
 
@@ -221,7 +247,10 @@ def execute_action(request: ActionRequest, input_service: InputService = Depends
 
 
 @router.get("/find-by-id")
-def find_element_by_id(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def find_element_by_id(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     通过 resource-id 查找元素
 
@@ -239,7 +268,10 @@ def find_element_by_id(resource_id: str = Query(..., description="元素的 reso
 
 
 @router.get("/find-by-text")
-def find_element_by_text(text: str = Query(..., description="元素的文本内容"), input_service: InputService = Depends(get_input_service)):
+def find_element_by_text(
+    text: str = Query(..., description="元素的文本内容"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     通过 text 查找元素
 
@@ -257,7 +289,10 @@ def find_element_by_text(text: str = Query(..., description="元素的文本内�
 
 
 @router.get("/find-by-class")
-def find_element_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+def find_element_by_class(
+    class_name: str = Query(..., description="元素的类名"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     通过 className 查找元素
 
@@ -275,7 +310,10 @@ def find_element_by_class(class_name: str = Query(..., description="元素的类
 
 
 @router.get("/find-elements-by-class")
-def find_elements_by_class(class_name: str = Query(..., description="元素的类名"), input_service: InputService = Depends(get_input_service)):
+def find_elements_by_class(
+    class_name: str = Query(..., description="元素的类名"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     通过 className 查找所有匹配元素
 
@@ -293,7 +331,10 @@ def find_elements_by_class(class_name: str = Query(..., description="元素的�
 
 
 @router.get("/find-by-xpath")
-def find_element_by_xpath(xpath: str = Query(..., description="XPath 表达式"), input_service: InputService = Depends(get_input_service)):
+def find_element_by_xpath(
+    xpath: str = Query(..., description="XPath 表达式"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     通过 XPath 查找元素
 
@@ -311,7 +352,10 @@ def find_element_by_xpath(xpath: str = Query(..., description="XPath 表达式")
 
 
 @router.get("/exists")
-def element_exists(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def element_exists(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     检查元素是否存在
 
@@ -329,7 +373,10 @@ def element_exists(resource_id: str = Query(..., description="元素的 resource
 
 
 @router.get("/text")
-def get_element_text(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def get_element_text(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     获取元素文本内容
 
@@ -347,7 +394,10 @@ def get_element_text(resource_id: str = Query(..., description="元素的 resour
 
 
 @router.get("/bounds")
-def get_element_bounds(resource_id: str = Query(..., description="元素的 resource-id"), input_service: InputService = Depends(get_input_service)):
+def get_element_bounds(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     获取元素边界位置
 
@@ -365,7 +415,11 @@ def get_element_bounds(resource_id: str = Query(..., description="元素的 reso
 
 
 @router.get("/wait-appear")
-def wait_for_element(resource_id: str = Query(..., description="元素的 resource-id"), timeout: float = Query(10.0, description="最大等待时间（秒）"), input_service: InputService = Depends(get_input_service)):
+def wait_for_element(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    timeout: float = Query(10.0, description="最大等待时间（秒）"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     等待元素出现
 
@@ -384,7 +438,11 @@ def wait_for_element(resource_id: str = Query(..., description="元素的 resour
 
 
 @router.get("/wait-gone")
-def wait_for_element_gone(resource_id: str = Query(..., description="元素的 resource-id"), timeout: float = Query(10.0, description="最大等待时间（秒）"), input_service: InputService = Depends(get_input_service)):
+def wait_for_element_gone(
+    resource_id: str = Query(..., description="元素的 resource-id"),
+    timeout: float = Query(10.0, description="最大等待时间（秒）"),
+    input_service: InputService = Depends(get_input_service),
+):
     """
     等待元素消失
 
@@ -462,7 +520,7 @@ def unlock_screen(input_service: InputService = Depends(get_input_service)):
 def send_action(
     resource_id: str = Query(..., description="元素的 resource-id"),
     action: str = Query("IME_ACTION_DONE", description="动作类型"),
-    input_service: InputService = Depends(get_input_service)
+    input_service: InputService = Depends(get_input_service),
 ):
     """
     发送完成动作
@@ -479,3 +537,130 @@ def send_action(
     """
     result = input_service.send_action(resource_id, action)
     return ActionResponse(success=result, result={"resource_id": resource_id, "action": action})
+
+
+# ============ 通用选择器 API ============
+
+
+@router.post("/set-text-by-selector", response_model=ActionResponse)
+def set_text_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    text: str = Query(..., description="要输入的文本"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器输入文本
+
+    支持多种选择器类型定位元素并输入文本。
+    """
+    result = input_service.set_text_by_selector(selector_type, selector_value, text)
+    return ActionResponse(
+        success=result, result={"selector_type": selector_type, "selector_value": selector_value}
+    )
+
+
+@router.post("/clear-text-by-selector", response_model=ActionResponse)
+def clear_text_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器清除文本
+
+    支持多种选择器类型定位元素并清除文本。
+    """
+    result = input_service.clear_text_by_selector(selector_type, selector_value)
+    return ActionResponse(
+        success=result, result={"selector_type": selector_type, "selector_value": selector_value}
+    )
+
+
+@router.post("/send-action-by-selector", response_model=ActionResponse)
+def send_action_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器发送完成动作
+
+    支持多种选择器类型定位元素并发送完成动作。
+    """
+    result = input_service.send_action_by_selector(selector_type, selector_value)
+    return ActionResponse(
+        success=result, result={"selector_type": selector_type, "selector_value": selector_value}
+    )
+
+
+@router.get("/wait-appear-by-selector")
+def wait_for_element_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    timeout: float = Query(10.0, description="最大等待时间（秒）"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器等待元素出现
+
+    支持多种选择器类型等待元素出现。
+    """
+    appeared = input_service.wait_for_element_by_selector(selector_type, selector_value, timeout)
+    return {
+        "selector_type": selector_type,
+        "selector_value": selector_value,
+        "appeared": appeared,
+        "timeout": timeout,
+    }
+
+
+@router.get("/wait-gone-by-selector")
+def wait_for_element_gone_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    timeout: float = Query(10.0, description="最大等待时间（秒）"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器等待元素消失
+
+    支持多种选择器类型等待元素消失。
+    """
+    gone = input_service.wait_for_element_gone_by_selector(selector_type, selector_value, timeout)
+    return {
+        "selector_type": selector_type,
+        "selector_value": selector_value,
+        "gone": gone,
+        "timeout": timeout,
+    }
+
+
+@router.get("/text-by-selector")
+def get_element_text_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器获取元素文本
+
+    支持多种选择器类型获取元素文本内容。
+    """
+    result = input_service.get_element_text_by_selector(selector_type, selector_value)
+    return {"selector_type": selector_type, "selector_value": selector_value, "result": result}
+
+
+@router.get("/bounds-by-selector")
+def get_element_bounds_by_selector(
+    selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
+    selector_value: str = Query(..., description="选择器值"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过选择器获取元素边界
+
+    支持多种选择器类型获取元素边界位置。
+    """
+    result = input_service.get_element_bounds_by_selector(selector_type, selector_value)
+    return {"selector_type": selector_type, "selector_value": selector_value, "result": result}

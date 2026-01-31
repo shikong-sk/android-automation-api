@@ -70,7 +70,8 @@
 │   │   │   ├── InputControl.vue  # 输入操作组件
 │   │   │   ├── NavigationControl.vue # 导航控制组件
 │   │   │   ├── AdbManager.vue    # ADB 工具组件
-│   │   │   └── ScriptEditor.vue  # 脚本编辑器组件
+│   │   │   ├── ScriptEditor.vue  # 脚本编辑器组件
+│   │   │   └── XPathGenerator.vue # XPath 生成器组件
 │   │   ├── layouts/              # 布局组件
 │   │   │   └── DefaultLayout.vue
 │   │   ├── pages/                # 页面组件
@@ -175,6 +176,20 @@ npm run dev
 | GET | `/api/v1/input/wait-appear` | 等待元素出现 |
 | GET | `/api/v1/input/wait-gone` | 等待元素消失 |
 | GET | `/api/v1/input/hierarchy` | 获取当前界面 XML 结构 |
+
+### 输入操作 - 通用选择器
+
+支持多种选择器类型（id、text、class、xpath）的统一接口：
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/v1/input/set-text-by-selector` | 通过选择器输入文本 |
+| POST | `/api/v1/input/clear-text-by-selector` | 通过选择器清除文本 |
+| POST | `/api/v1/input/send-action-by-selector` | 通过选择器发送完成动作 |
+| GET | `/api/v1/input/wait-appear-by-selector` | 通过选择器等待元素出现 |
+| GET | `/api/v1/input/wait-gone-by-selector` | 通过选择器等待元素消失 |
+| GET | `/api/v1/input/text-by-selector` | 通过选择器获取元素文本 |
+| GET | `/api/v1/input/bounds-by-selector` | 通过选择器获取元素边界 |
 
 ### 导航控制
 
@@ -287,11 +302,33 @@ curl -X POST "http://localhost:8000/api/v1/app/start/com.example.app"
 ### 等待元素
 
 ```bash
-# 等待元素出现（最多10秒）
+# 等待元素出现（最多10秒）- 通过 resource-id
 curl "http://localhost:8000/api/v1/input/wait-appear?resource_id=com.example:id/dialog&timeout=10"
 
-# 等待元素消失（最多10秒）
+# 等待元素消失（最多10秒）- 通过 resource-id
 curl "http://localhost:8000/api/v1/input/wait-gone?resource_id=com.example:id/loading&timeout=10"
+
+# 通过选择器等待元素出现
+curl "http://localhost:8000/api/v1/input/wait-appear-by-selector?selector_type=xpath&selector_value=//Button[@text='确定']&timeout=10"
+
+# 通过选择器等待元素消失
+curl "http://localhost:8000/api/v1/input/wait-gone-by-selector?selector_type=text&selector_value=加载中&timeout=10"
+```
+
+### 通用选择器操作
+
+```bash
+# 通过 XPath 输入文本
+curl -X POST "http://localhost:8000/api/v1/input/set-text-by-selector?selector_type=xpath&selector_value=//EditText[@resource-id='com.example:id/input']&text=Hello"
+
+# 通过文本定位清除文本
+curl -X POST "http://localhost:8000/api/v1/input/clear-text-by-selector?selector_type=text&selector_value=请输入"
+
+# 通过选择器获取元素文本
+curl "http://localhost:8000/api/v1/input/text-by-selector?selector_type=id&selector_value=com.example:id/title"
+
+# 通过选择器获取元素边界
+curl "http://localhost:8000/api/v1/input/bounds-by-selector?selector_type=xpath&selector_value=//Button[1]"
 ```
 
 ### 屏幕控制
@@ -362,11 +399,98 @@ curl -X POST "http://localhost:8000/api/v1/script/stop/{session_id}"
 |------|------|------|
 | 控制台 | `/` | 设备状态总览、快捷操作 |
 | 设备管理 | `/device` | 设备连接状态 |
-| 输入控制 | `/input` | 点击、输入、滑动、元素定位、屏幕控制 |
+| 输入控制 | `/input` | 点击、输入、滑动、元素定位、屏幕控制、XPath 生成器 |
 | 导航控制 | `/navigation` | 返回主页、返回、菜单等导航操作 |
 | 应用管理 | `/apps` | 启动、停止、清除应用数据 |
 | ADB 工具 | `/adb` | 设备信息、应用列表、Shell 命令执行 |
 | 自动化脚本 | `/script` | 脚本编辑、执行、管理 |
+
+## XPath 生成器
+
+项目提供可视化的 XPath 生成器，帮助不熟悉 XPath 语法的用户快速生成 XPath 表达式。
+
+### 功能特性
+
+#### 1. 快捷模板库
+
+提供 8 种常用 XPath 模板，一键填充参数即可生成：
+
+| 模板名称 | 模板格式 | 说明 |
+|----------|----------|------|
+| 按 resource-id 定位 | `//*[@resource-id="___"]` | 最常用的定位方式 |
+| 按文本精确匹配 | `//*[@text="___"]` | 通过显示文本定位 |
+| 按文本包含匹配 | `//*[contains(@text, "___")]` | 模糊文本匹配 |
+| 按 content-desc 定位 | `//*[@content-desc="___"]` | 通过无障碍描述定位 |
+| 按类型+文本组合 | `//___[@text="___"]` | 指定元素类型和文本 |
+| 按类型+ID组合 | `//___[@resource-id="___"]` | 指定元素类型和 ID |
+| 父子关系定位 | `//*[@resource-id="___"]/___` | 通过父元素定位子元素 |
+| 索引定位 | `(//___)[___]` | 定位同类元素中的第 N 个 |
+
+#### 2. 属性组合生成器
+
+通过表单选择元素属性，自动组合生成 XPath：
+
+- **元素类型选择**：支持 17 种常用 Android 控件类型
+- **多条件组合**：支持 AND/OR 逻辑组合多个属性条件
+- **匹配方式**：等于、包含、开头是、结尾是
+- **索引定位**：可指定匹配第 N 个元素
+
+支持的属性：
+- `resource-id` - 元素 ID
+- `text` - 显示文本
+- `content-desc` - 无障碍描述
+- `class` - 元素类名
+- `package` - 包名
+- `checkable/checked` - 可选中/已选中
+- `clickable` - 可点击
+- `enabled` - 已启用
+- `focusable/focused` - 可聚焦/已聚焦
+- `scrollable` - 可滚动
+- `selected` - 已选择
+
+#### 3. XML 树形选择器
+
+将当前界面 XML 解析为可交互的树形结构：
+
+- **可视化展示**：以树形结构展示界面元素层级
+- **搜索过滤**：支持按元素名、ID、文本等搜索节点
+- **点击生成**：点击任意节点自动生成 XPath
+- **多种策略**：
+  - 智能推荐 - 自动选择最佳定位方式
+  - 优先 ID - 优先使用 resource-id
+  - 优先文本 - 优先使用 text 属性
+  - 完整路径 - 生成完整的层级路径
+
+#### 4. XPath 测试验证
+
+- 一键测试生成的 XPath 是否能找到元素
+- 显示匹配元素数量和基本信息
+- 实时验证，快速调试
+
+#### 5. 快捷操作
+
+- **复制到剪贴板**：一键复制生成的 XPath
+- **插入到输入框**：直接插入到当前操作的输入框
+
+### 使用入口
+
+1. **界面结构卡片** - 点击 "XPath 生成器" 按钮
+2. **点击元素 Tab** - 选择 "By XPath" 后，点击输入框右侧的 "生成" 按钮
+3. **元素定位 Tab** - 选择 "By XPath" 后，点击输入框右侧的 "生成" 按钮
+4. **输入文本 Tab** - 选择 "By XPath" 后，点击输入框右侧的 "生成" 按钮
+5. **等待元素 Tab** - 选择 "By XPath" 后，点击输入框右侧的 "生成" 按钮
+6. **元素信息 Tab** - 选择 "By XPath" 后，点击输入框右侧的 "生成" 按钮
+
+### 通用选择器支持
+
+所有输入操作 Tab 现在都支持 4 种选择器类型：
+
+| 选择器类型 | 说明 | 示例 |
+|------------|------|------|
+| By ID | 通过 resource-id 定位 | `com.example:id/button` |
+| By Text | 通过显示文本定位 | `确定` |
+| By Class | 通过元素类名定位 | `android.widget.Button` |
+| By XPath | 通过 XPath 表达式定位 | `//Button[@text='确定']` |
 
 ## 自动化脚本 DSL
 

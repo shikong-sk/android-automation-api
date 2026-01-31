@@ -45,24 +45,39 @@
         
         <el-tab-pane label="输入文本" name="text">
           <div class="space-y-4">
-            <el-input
-              v-model="textResourceId"
-              placeholder="输入框的 resource-id"
-              clearable
-            />
+            <div class="flex gap-2">
+              <el-select v-model="textLocateType" placeholder="查找方式" class="w-32">
+                <el-option label="By ID" value="id" />
+                <el-option label="By Text" value="text" />
+                <el-option label="By Class" value="class" />
+                <el-option label="By XPath" value="xpath" />
+              </el-select>
+              <el-input
+                v-model="textLocateValue"
+                :placeholder="getPlaceholder(textLocateType)"
+                clearable
+                class="flex-1"
+              >
+                <template #append v-if="textLocateType === 'xpath'">
+                  <el-button @click="openXPathGenerator('text')">
+                    生成
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
             <el-input
               v-model="textInput"
               placeholder="要输入的文本内容"
               clearable
             />
             <div class="flex gap-2 flex-wrap">
-              <el-button type="primary" :disabled="!textResourceId || !textInput" @click="handleSetText">
+              <el-button type="primary" :disabled="!textLocateValue || !textInput" @click="handleSetText">
                 输入文本
               </el-button>
-              <el-button :disabled="!textResourceId" @click="handleClearText">
+              <el-button :disabled="!textLocateValue" @click="handleClearText">
                 清除文本
               </el-button>
-              <el-button :disabled="!textResourceId" @click="handleSendAction">
+              <el-button :disabled="!textLocateValue" @click="handleSendAction">
                 完成 (Send Action)
               </el-button>
             </div>
@@ -132,20 +147,35 @@
         
         <el-tab-pane label="等待元素" name="wait">
           <div class="space-y-4">
-            <el-input
-              v-model="waitResourceId"
-              placeholder="输入元素的 resource-id"
-              clearable
-            />
+            <div class="flex gap-2">
+              <el-select v-model="waitLocateType" placeholder="查找方式" class="w-32">
+                <el-option label="By ID" value="id" />
+                <el-option label="By Text" value="text" />
+                <el-option label="By Class" value="class" />
+                <el-option label="By XPath" value="xpath" />
+              </el-select>
+              <el-input
+                v-model="waitLocateValue"
+                :placeholder="getPlaceholder(waitLocateType)"
+                clearable
+                class="flex-1"
+              >
+                <template #append v-if="waitLocateType === 'xpath'">
+                  <el-button @click="openXPathGenerator('wait')">
+                    生成
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
             <div>
               <p class="text-sm text-gray-500 mb-2">等待时间（秒）: {{ waitTimeout }}</p>
               <el-slider v-model="waitTimeout" :min="1" :max="30" :step="1" />
             </div>
             <div class="flex gap-2">
-              <el-button type="primary" :disabled="!waitResourceId" @click="handleWaitAppear">
+              <el-button type="primary" :disabled="!waitLocateValue" @click="handleWaitAppear">
                 等待出现
               </el-button>
-              <el-button :disabled="!waitResourceId" @click="handleWaitGone">
+              <el-button :disabled="!waitLocateValue" @click="handleWaitGone">
                 等待消失
               </el-button>
             </div>
@@ -154,16 +184,31 @@
 
         <el-tab-pane label="元素信息" name="info">
           <div class="space-y-4">
-            <el-input
-              v-model="infoResourceId"
-              placeholder="输入元素的 resource-id"
-              clearable
-            />
             <div class="flex gap-2">
-              <el-button type="primary" :disabled="!infoResourceId" @click="handleGetText">
+              <el-select v-model="infoLocateType" placeholder="查找方式" class="w-32">
+                <el-option label="By ID" value="id" />
+                <el-option label="By Text" value="text" />
+                <el-option label="By Class" value="class" />
+                <el-option label="By XPath" value="xpath" />
+              </el-select>
+              <el-input
+                v-model="infoLocateValue"
+                :placeholder="getPlaceholder(infoLocateType)"
+                clearable
+                class="flex-1"
+              >
+                <template #append v-if="infoLocateType === 'xpath'">
+                  <el-button @click="openXPathGenerator('info')">
+                    生成
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+            <div class="flex gap-2">
+              <el-button type="primary" :disabled="!infoLocateValue" @click="handleGetText">
                 获取文本
               </el-button>
-              <el-button :disabled="!infoResourceId" @click="handleGetBounds">
+              <el-button :disabled="!infoLocateValue" @click="handleGetBounds">
                 获取边界
               </el-button>
             </div>
@@ -300,16 +345,19 @@ import XPathGenerator from './XPathGenerator.vue'
 const activeTab = ref('click')
 const clickLocateType = ref('id')
 const clickLocateValue = ref('')
-const textResourceId = ref('')
+const textLocateType = ref('id')
+const textLocateValue = ref('')
 const textInput = ref('')
 const swipeDirection = ref('up')
 const swipePercent = ref(0.5)
 const locateValue = ref('')
 const locateType = ref('id')
 const locateResult = ref(null)
-const waitResourceId = ref('')
+const waitLocateType = ref('id')
+const waitLocateValue = ref('')
 const waitTimeout = ref(10)
-const infoResourceId = ref('')
+const infoLocateType = ref('id')
+const infoLocateValue = ref('')
 const elementInfo = ref(null)
 const hierarchyXml = ref('')
 const loadingHierarchy = ref(false)
@@ -323,7 +371,7 @@ const xmlContainerRef = ref(null)
 
 // XPath 生成器相关
 const showXPathGenerator = ref(false)
-const xpathInsertTarget = ref('') // 'click' 或 'locate'
+const xpathInsertTarget = ref('') // 'click', 'locate', 'text', 'wait', 'info'
 
 function openXPathGenerator(target) {
   xpathInsertTarget.value = target
@@ -331,24 +379,44 @@ function openXPathGenerator(target) {
 }
 
 function handleXPathInsert(xpath) {
-  if (xpathInsertTarget.value === 'click') {
-    clickLocateValue.value = xpath
-    clickLocateType.value = 'xpath'
-  } else if (xpathInsertTarget.value === 'locate') {
-    locateValue.value = xpath
-    locateType.value = 'xpath'
+  switch (xpathInsertTarget.value) {
+    case 'click':
+      clickLocateValue.value = xpath
+      clickLocateType.value = 'xpath'
+      break
+    case 'locate':
+      locateValue.value = xpath
+      locateType.value = 'xpath'
+      break
+    case 'text':
+      textLocateValue.value = xpath
+      textLocateType.value = 'xpath'
+      break
+    case 'wait':
+      waitLocateValue.value = xpath
+      waitLocateType.value = 'xpath'
+      break
+    case 'info':
+      infoLocateValue.value = xpath
+      infoLocateType.value = 'xpath'
+      break
   }
   ElMessage.success('XPath 已插入')
 }
 
-const clickPlaceholder = computed(() => {
+// 通用 placeholder 获取函数
+function getPlaceholder(locateType) {
   const placeholders = {
     id: '输入元素的 resource-id（如 com.example:id/button）',
     text: '输入元素的文本内容（如 确定）',
     class: '输入元素的类名（如 android.widget.Button）',
     xpath: '输入 XPath 表达式（如 //android.widget.Button[@text="确定"]）'
   }
-  return placeholders[clickLocateType.value] || '输入定位值'
+  return placeholders[locateType] || '输入定位值'
+}
+
+const clickPlaceholder = computed(() => {
+  return getPlaceholder(clickLocateType.value)
 })
 
 async function handleClick() {
@@ -408,7 +476,7 @@ async function handleExists() {
 
 async function handleSetText() {
   try {
-    await inputApi.setText(textResourceId.value, textInput.value)
+    await inputApi.setTextBySelector(textLocateType.value, textLocateValue.value, textInput.value)
     ElMessage.success('文本输入成功')
   } catch (err) {
     ElMessage.error('输入文本失败')
@@ -417,7 +485,7 @@ async function handleSetText() {
 
 async function handleClearText() {
   try {
-    await inputApi.clearText(textResourceId.value)
+    await inputApi.clearTextBySelector(textLocateType.value, textLocateValue.value)
     ElMessage.success('清除文本成功')
   } catch (err) {
     ElMessage.error('清除文本失败')
@@ -426,7 +494,7 @@ async function handleClearText() {
 
 async function handleSendAction() {
   try {
-    await inputApi.sendAction(textResourceId.value)
+    await inputApi.sendActionBySelector(textLocateType.value, textLocateValue.value)
     ElMessage.success('发送完成动作成功')
   } catch (err) {
     ElMessage.error('发送完成动作失败')
@@ -480,7 +548,7 @@ async function handleFindAll() {
 
 async function handleWaitAppear() {
   try {
-    const result = await inputApi.waitAppear(waitResourceId.value, waitTimeout.value)
+    const result = await inputApi.waitAppearBySelector(waitLocateType.value, waitLocateValue.value, waitTimeout.value)
     if (result.appeared) {
       ElMessage.success('元素已出现')
     } else {
@@ -493,7 +561,7 @@ async function handleWaitAppear() {
 
 async function handleWaitGone() {
   try {
-    const result = await inputApi.waitGone(waitResourceId.value, waitTimeout.value)
+    const result = await inputApi.waitGoneBySelector(waitLocateType.value, waitLocateValue.value, waitTimeout.value)
     if (result.gone) {
       ElMessage.success('元素已消失')
     } else {
@@ -506,8 +574,8 @@ async function handleWaitGone() {
 
 async function handleGetText() {
   try {
-    const result = await inputApi.getElementText(infoResourceId.value)
-    elementInfo.value = result
+    const result = await inputApi.getElementTextBySelector(infoLocateType.value, infoLocateValue.value)
+    elementInfo.value = result.result || result
     ElMessage.success('获取文本成功')
   } catch (err) {
     ElMessage.error('获取文本失败')
@@ -517,8 +585,8 @@ async function handleGetText() {
 
 async function handleGetBounds() {
   try {
-    const result = await inputApi.getElementBounds(infoResourceId.value)
-    elementInfo.value = result
+    const result = await inputApi.getElementBoundsBySelector(infoLocateType.value, infoLocateValue.value)
+    elementInfo.value = result.result || result
     ElMessage.success('获取边界成功')
   } catch (err) {
     ElMessage.error('获取边界失败')

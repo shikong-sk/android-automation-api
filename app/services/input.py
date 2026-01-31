@@ -561,3 +561,200 @@ class InputService(AutomationService):
             return True
         except Exception:
             return False
+
+    def _get_element(self, selector_type: str, selector_value: str):
+        """
+        根据选择器类型获取元素
+
+        Args:
+            selector_type: 选择器类型，可选值为 "id"、"text"、"class"、"xpath"
+            selector_value: 选择器值
+
+        Returns:
+            元素对象
+        """
+        if selector_type == "id":
+            return self.device(resourceId=selector_value)
+        elif selector_type == "text":
+            return self.device(text=selector_value)
+        elif selector_type == "class":
+            return self.device(className=selector_value)
+        elif selector_type == "xpath":
+            return self.device.xpath(selector_value)
+        else:
+            return self.device(resourceId=selector_value)
+
+    def set_text_by_selector(self, selector_type: str, selector_value: str, text: str) -> bool:
+        """
+        通过选择器向元素输入文本
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+            text: 要输入的文本
+
+        Returns:
+            bool: 操作是否成功
+        """
+        element = self._get_element(selector_type, selector_value)
+        if element.exists:
+            element.click()
+            self.device.sleep(0.3)
+            self.device.send_keys(text, clear=False)
+            return True
+        return False
+
+    def clear_text_by_selector(self, selector_type: str, selector_value: str) -> bool:
+        """
+        通过选择器清除元素文本
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+
+        Returns:
+            bool: 操作是否成功
+        """
+        element = self._get_element(selector_type, selector_value)
+        if element.exists:
+            element.click()
+            self.device.clear_text()
+            return True
+        return False
+
+    def send_action_by_selector(self, selector_type: str, selector_value: str) -> bool:
+        """
+        通过选择器发送完成动作
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+
+        Returns:
+            bool: 操作是否成功
+        """
+        element = self._get_element(selector_type, selector_value)
+        if element.exists:
+            try:
+                self.device.set_input_ime(True)
+                element.click()
+                self.device.press("enter")
+                self.device.set_input_ime(False)
+                return True
+            except Exception:
+                return False
+        return False
+
+    def wait_for_element_by_selector(
+        self, selector_type: str, selector_value: str, timeout: float = 10.0
+    ) -> bool:
+        """
+        通过选择器等待元素出现
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+            timeout: 超时时间（秒）
+
+        Returns:
+            bool: 元素是否出现
+        """
+        element = self._get_element(selector_type, selector_value)
+        try:
+            if selector_type == "xpath":
+                # xpath 元素使用不同的等待方式
+                return element.wait(timeout=timeout)
+            result = element.wait.exists(timeout=timeout)  # type: ignore
+            return result is True
+        except Exception:
+            return bool(element.exists)
+
+    def wait_for_element_gone_by_selector(
+        self, selector_type: str, selector_value: str, timeout: float = 10.0
+    ) -> bool:
+        """
+        通过选择器等待元素消失
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+            timeout: 超时时间（秒）
+
+        Returns:
+            bool: 元素是否消失
+        """
+        element = self._get_element(selector_type, selector_value)
+        try:
+            if selector_type == "xpath":
+                # xpath 元素使用轮询方式检查
+                import time
+
+                start_time = time.time()
+                while time.time() - start_time < timeout:
+                    if not element.exists:
+                        return True
+                    time.sleep(0.5)
+                return not element.exists
+            result = element.wait.gone(timeout=timeout)  # type: ignore
+            return result is True
+        except Exception:
+            return not bool(element.exists)
+
+    def get_element_text_by_selector(
+        self, selector_type: str, selector_value: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        通过选择器获取元素文本
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+
+        Returns:
+            Dict: 包含文本信息的字典
+        """
+        element = self._get_element(selector_type, selector_value)
+        if element.exists:
+            if selector_type == "xpath":
+                info = element.get()
+                return {"exists": True, "text": info.attrib.get("text", "")}
+            else:
+                return {"exists": True, "text": element.info.get("text", "")}
+        return None
+
+    def get_element_bounds_by_selector(
+        self, selector_type: str, selector_value: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        通过选择器获取元素边界
+
+        Args:
+            selector_type: 选择器类型
+            selector_value: 选择器值
+
+        Returns:
+            Dict: 包含边界信息的字典
+        """
+        element = self._get_element(selector_type, selector_value)
+        if element.exists:
+            if selector_type == "xpath":
+                info = element.get()
+                bounds_str = info.attrib.get("bounds", "")
+                # 解析 bounds 字符串 "[left,top][right,bottom]"
+                import re
+
+                match = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", bounds_str)
+                if match:
+                    return {
+                        "exists": True,
+                        "bounds": {
+                            "left": int(match.group(1)),
+                            "top": int(match.group(2)),
+                            "right": int(match.group(3)),
+                            "bottom": int(match.group(4)),
+                        },
+                    }
+                return {"exists": True, "bounds": bounds_str}
+            else:
+                return {"exists": True, "bounds": element.info.get("bounds", {})}
+        return None

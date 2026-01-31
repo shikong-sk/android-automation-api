@@ -37,6 +37,49 @@ export const inputApi = {
     return request.post('/input/clear-text', null, { params: { resource_id: resourceId } })
   },
 
+  // 通用选择器方法
+  setTextBySelector(selectorType, selectorValue, text) {
+    return request.post('/input/set-text-by-selector', null, { 
+      params: { selector_type: selectorType, selector_value: selectorValue, text } 
+    })
+  },
+
+  clearTextBySelector(selectorType, selectorValue) {
+    return request.post('/input/clear-text-by-selector', null, { 
+      params: { selector_type: selectorType, selector_value: selectorValue } 
+    })
+  },
+
+  sendActionBySelector(selectorType, selectorValue) {
+    return request.post('/input/send-action-by-selector', null, { 
+      params: { selector_type: selectorType, selector_value: selectorValue } 
+    })
+  },
+
+  waitAppearBySelector(selectorType, selectorValue, timeout = 10) {
+    return request.get('/input/wait-appear-by-selector', { 
+      params: { selector_type: selectorType, selector_value: selectorValue, timeout } 
+    })
+  },
+
+  waitGoneBySelector(selectorType, selectorValue, timeout = 10) {
+    return request.get('/input/wait-gone-by-selector', { 
+      params: { selector_type: selectorType, selector_value: selectorValue, timeout } 
+    })
+  },
+
+  getElementTextBySelector(selectorType, selectorValue) {
+    return request.get('/input/text-by-selector', { 
+      params: { selector_type: selectorType, selector_value: selectorValue } 
+    })
+  },
+
+  getElementBoundsBySelector(selectorType, selectorValue) {
+    return request.get('/input/bounds-by-selector', { 
+      params: { selector_type: selectorType, selector_value: selectorValue } 
+    })
+  },
+
   swipe(direction, percent = 0.5) {
     return request.post('/input/swipe', null, { params: { direction, percent } })
   },
