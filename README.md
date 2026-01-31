@@ -89,6 +89,8 @@
 │   ├── tailwind.config.js
 │   └── package.json
 ├── pyproject.toml                # 项目配置
+├── Dockerfile                    # Docker 镜像构建文件
+├── docker-compose.example.yaml   # Docker Compose 示例配置
 ├── .env                          # 环境变量
 └── README.md                     # 项目说明
 ```
@@ -126,6 +128,67 @@ npm run dev
 - 前端界面: http://localhost:5173
 - Swagger UI: http://localhost:8000/api/docs
 - ReDoc: http://localhost:8000/api/redoc
+
+## Docker 部署
+
+### 使用 Docker Compose（推荐）
+
+1. 复制示例配置文件：
+
+```bash
+cp docker-compose.example.yaml docker-compose.yaml
+```
+
+2. 根据需要修改 `docker-compose.yaml` 中的配置
+
+3. 构建并启动容器：
+
+```bash
+docker-compose up -d --build
+```
+
+4. 访问服务：http://localhost:8000
+
+### 手动构建镜像
+
+```bash
+# 构建镜像
+docker build -t android-automation-api:latest .
+
+# 运行容器
+docker run -d \
+  --name android-automation-api \
+  -p 8000:80 \
+  --privileged \
+  --device /dev/bus/usb:/dev/bus/usb \
+  -v ./scripts:/app/scripts \
+  android-automation-api:latest
+```
+
+### Docker 配置说明
+
+| 配置项 | 说明 |
+|--------|------|
+| `ports: 8000:80` | 将容器 80 端口映射到主机 8000 端口 |
+| `privileged: true` | 允许容器访问 USB 设备 |
+| `devices` | 挂载 USB 设备目录，用于 ADB 连接 |
+| `volumes` | 挂载脚本目录，支持热更新脚本 |
+
+### 环境变量
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `APP_NAME` | Android Automation API | 应用名称 |
+| `APP_VERSION` | 1.0.0 | 应用版本 |
+| `DEBUG` | false | 调试模式 |
+| `DEFAULT_DEVICE_SERIAL` | 空 | 默认设备序列号 |
+
+### 注意事项
+
+1. **USB 设备访问**：容器需要 `privileged` 权限才能访问 USB 设备
+2. **WiFi 连接**：确保容器网络可以访问目标设备 IP
+3. **脚本持久化**：建议挂载 `scripts` 目录以持久化脚本文件
+4. **健康检查**：容器内置健康检查，访问 `/health` 端点
 
 ## API 接口文档
 
