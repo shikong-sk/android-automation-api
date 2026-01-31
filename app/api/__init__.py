@@ -8,11 +8,13 @@ API 路由模块
 - input: 输入交互相关接口
 - navigation: 系统导航相关接口
 - app: 应用管理相关接口
+- adb: ADB 命令相关接口
 """
 
 from .device import router as device_router
 from .input import router as input_router
 from .navigation import router as navigation_router
 from .app import router as app_router
+from .adb import router as adb_router
 
-__all__ = ["device_router", "input_router", "navigation_router", "app_router"]
+__all__ = ["device_router", "input_router", "navigation_router", "app_router", "adb_router"]

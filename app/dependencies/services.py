@@ -8,6 +8,7 @@
 from typing import Generator
 from app.core.device import DeviceManager, get_device_manager
 from app.services import InputService, NavigationService, AppService
+from app.services.adb_service import AdbService
 
 
 def get_input_service() -> Generator[InputService, None, None]:
@@ -52,3 +53,19 @@ def get_app_service() -> Generator[AppService, None, None]:
     """
     manager = get_device_manager()
     yield AppService(manager)
+
+
+def get_adb_service() -> Generator[AdbService, None, None]:
+    """
+    AdbService 依赖注入函数
+
+    创建 AdbService 实例并通过依赖注入提供给路由使用。
+    使用当前连接设备的序列号初始化 AdbService。
+
+    Returns:
+        Generator: 生成 AdbService 实例的生成器。
+    """
+    manager = get_device_manager()
+    # 获取当前连接设备的序列号
+    device_serial = manager.get_device().serial if manager.is_connected() else None
+    yield AdbService(device_serial)

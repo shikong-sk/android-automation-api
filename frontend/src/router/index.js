@@ -30,6 +30,12 @@ const routes = [
     name: 'Apps',
     component: () => import('@/pages/Apps.vue'),
     meta: { title: '应用管理' }
+  },
+  {
+    path: '/adb',
+    name: 'Adb',
+    component: () => import('@/pages/Adb.vue'),
+    meta: { title: 'ADB 工具' }
   }
 ]
 

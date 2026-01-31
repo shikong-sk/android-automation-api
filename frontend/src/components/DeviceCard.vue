@@ -28,9 +28,25 @@
       </div>
     </div>
     
-    <div v-else class="text-gray-500 text-center py-4">
-      <el-icon class="text-4xl mb-2"><MobileAlt /></el-icon>
-      <p class="text-sm">暂无设备连接</p>
+    <div v-else class="space-y-4">
+      <div class="text-gray-500 text-center py-2">
+        <el-icon class="text-4xl mb-2"><MobileAlt /></el-icon>
+        <p class="text-sm">暂无设备连接</p>
+      </div>
+      
+      <el-input
+        v-model="deviceSerial"
+        placeholder="输入设备序列号或 IP 地址"
+        clearable
+        @keyup.enter="handleConnect"
+      >
+        <template #prepend>
+          <el-icon><Plug /></el-icon>
+        </template>
+      </el-input>
+      <p class="text-xs text-gray-400">
+        留空自动选择设备，或输入 IP:端口 进行 WiFi 连接
+      </p>
     </div>
     
     <template #footer>
@@ -43,43 +59,75 @@
         >
           连接设备
         </el-button>
-        <el-button 
-          v-else
-          type="danger" 
-          :loading="loading"
-          @click="handleDisconnect"
-        >
-          断开连接
-        </el-button>
+        <template v-else>
+          <el-button 
+            type="primary"
+            :loading="loading"
+            @click="handleRefresh"
+          >
+            刷新状态
+          </el-button>
+          <el-button 
+            type="danger" 
+            :loading="loading"
+            @click="handleDisconnect"
+          >
+            断开连接
+          </el-button>
+        </template>
       </div>
     </template>
   </el-card>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useDeviceStore } from '@/stores'
-import { MobileAlt, Desktop, Microchip, BatteryFull } from '@vicons/fa'
+import { MobileAlt, Desktop, Microchip, BatteryFull, Plug } from '@vicons/fa'
 
 const deviceStore = useDeviceStore()
+const deviceSerial = ref('')
 
 const connected = computed(() => deviceStore.connected)
 const deviceInfo = computed(() => deviceStore.deviceInfo)
 const loading = computed(() => deviceStore.loading)
 
+// 页面加载时获取设备状态
+onMounted(async () => {
+  try {
+    await deviceStore.fetchStatus()
+  } catch (err) {
+    // 忽略初始化错误
+  }
+})
+
 async function handleConnect() {
   try {
-    await deviceStore.connect()
+    const serial = deviceSerial.value.trim() || null
+    await deviceStore.connect(serial)
+    ElMessage.success('设备连接成功')
+    deviceSerial.value = ''
   } catch (err) {
-    console.error('连接失败:', err)
+    ElMessage.error(err.response?.data?.detail || '连接设备失败')
   }
 }
 
 async function handleDisconnect() {
   try {
     await deviceStore.disconnect()
+    ElMessage.success('设备已断开')
   } catch (err) {
-    console.error('断开连接失败:', err)
+    ElMessage.error('断开连接失败')
+  }
+}
+
+async function handleRefresh() {
+  try {
+    await deviceStore.fetchStatus()
+    ElMessage.success('状态已刷新')
+  } catch (err) {
+    ElMessage.error('刷新状态失败')
   }
 }
 </script>

@@ -17,7 +17,7 @@ Android Automation API 主应用模块
 from fastapi import FastAPI, applications
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import device_router, input_router, navigation_router, app_router
+from app.api import device_router, input_router, navigation_router, app_router, adb_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -38,9 +38,10 @@ def swagger_monkey_patch(*args, **kwargs):
         get_swagger_ui_html 的返回结果。
     """
     return get_swagger_ui_html(
-        *args, **kwargs,
-        swagger_js_url='https://cdn.staticfile.org/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
-        swagger_css_url='https://cdn.staticfile.org/swagger-ui/4.15.5/swagger-ui.min.css'
+        *args,
+        **kwargs,
+        swagger_js_url="https://cdn.staticfile.org/swagger-ui/4.15.5/swagger-ui-bundle.min.js",
+        swagger_css_url="https://cdn.staticfile.org/swagger-ui/4.15.5/swagger-ui.min.css",
     )
 
 
@@ -50,7 +51,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
 )
 app.openapi_version = "3.0.0"
 
@@ -66,6 +67,7 @@ app.include_router(device_router, prefix="/api/v1")
 app.include_router(input_router, prefix="/api/v1")
 app.include_router(navigation_router, prefix="/api/v1")
 app.include_router(app_router, prefix="/api/v1")
+app.include_router(adb_router, prefix="/api/v1")
 
 
 @app.get("/")

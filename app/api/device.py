@@ -31,7 +31,7 @@ def connect_device(request: DeviceConnectRequest = None):  # type: ignore[assign
         serial=info.serial,
         product_name=info.product_name,
         api_level=info.api_level,
-        battery_level=info.battery_level
+        battery_level=info.battery_level,
     )
 
 
@@ -47,17 +47,25 @@ def get_device_status():
     """
     manager = get_device_manager()
     if manager.is_connected():
-        info = manager.get_device().info
-        battery_info = info.get("battery", {})
-        return DeviceStatusResponse(
-            connected=True,
-            device_info=DeviceInfoResponse(
-                serial=manager.get_device().serial,
-                product_name=info.get("productName", "Unknown"),
-                api_level=info.get("apiLevel", 0),
-                battery_level=battery_info.get("level", 0)
+        try:
+            device = manager.get_device()
+            info = device.info
+            # 通过 ADB 获取电池信息
+            battery_level = manager._get_battery_level(device.serial)
+
+            return DeviceStatusResponse(
+                connected=True,
+                device_info=DeviceInfoResponse(
+                    serial=device.serial,
+                    product_name=info.get("productName", "Unknown"),
+                    api_level=info.get("sdkInt", 0),
+                    battery_level=battery_level,
+                ),
             )
-        )
+        except Exception:
+            # 设备可能已断开
+            manager.disconnect()
+            return DeviceStatusResponse(connected=False)
     return DeviceStatusResponse(connected=False)
 
 

@@ -1,16 +1,17 @@
 # Android Automation API
 
-基于 uiautomator2 的安卓设备自动化控制 REST API 服务。
+基于 uiautomator2 和 adbutils 的安卓设备自动化控制 REST API 服务。
 
 ## 项目简介
 
-本项目通过 FastAPI 提供 RESTful API 接口，实现对安卓设备的自动化控制。支持设备连接、界面交互、导航控制、应用管理、元素定位等操作。
+本项目通过 FastAPI 提供 RESTful API 接口，实现对安卓设备的自动化控制。支持设备连接（USB/WiFi）、界面交互、导航控制、应用管理、元素定位、ADB 命令执行等操作。
 
 ## 技术栈
 
 ### 后端
 - **Python 3.11+**: 开发语言
 - **uiautomator2**: 安卓设备自动化控制库
+- **adbutils**: ADB 命令操作库
 - **FastAPI**: Web 框架
 - **Pydantic**: 数据验证和序列化
 - **uv**: Python 包管理工具
@@ -30,7 +31,8 @@
 │   │   ├── device.py             # 设备连接相关接口
 │   │   ├── input.py              # 输入交互接口（含元素定位）
 │   │   ├── navigation.py         # 系统导航接口
-│   │   └── app.py                # 应用管理接口
+│   │   ├── app.py                # 应用管理接口
+│   │   └── adb.py                # ADB 命令接口
 │   ├── core/                     # 核心模块
 │   │   ├── config.py             # 配置管理
 │   │   └── device.py             # 设备管理器（单例模式）
@@ -43,7 +45,8 @@
 │   │   ├── base.py               # 服务基类
 │   │   ├── input.py              # 输入操作服务（含元素定位）
 │   │   ├── navigation.py         # 导航操作服务
-│   │   └── app_service.py        # 应用管理服务
+│   │   ├── app_service.py        # 应用管理服务
+│   │   └── adb_service.py        # ADB 命令服务
 │   ├── main.py                   # 应用入口
 │   └── __init__.py               # 模块初始化
 ├── frontend/                     # Vue 前端源码
@@ -54,12 +57,14 @@
 │   │   │   ├── app.js            # 应用管理 API
 │   │   │   ├── device.js         # 设备相关 API
 │   │   │   ├── input.js          # 输入操作 API
-│   │   │   └── navigation.js     # 导航控制 API
+│   │   │   ├── navigation.js     # 导航控制 API
+│   │   │   └── adb.js            # ADB 命令 API
 │   │   ├── components/           # Vue 组件
 │   │   │   ├── AppManager.vue    # 应用管理组件
 │   │   │   ├── DeviceCard.vue    # 设备状态组件
 │   │   │   ├── InputControl.vue  # 输入操作组件
-│   │   │   └── NavigationControl.vue # 导航控制组件
+│   │   │   ├── NavigationControl.vue # 导航控制组件
+│   │   │   └── AdbManager.vue    # ADB 工具组件
 │   │   ├── layouts/              # 布局组件
 │   │   │   └── DefaultLayout.vue
 │   │   ├── pages/                # 页面组件
@@ -67,7 +72,8 @@
 │   │   │   ├── Dashboard.vue     # 仪表盘
 │   │   │   ├── Device.vue        # 设备页
 │   │   │   ├── Input.vue         # 输入操作页
-│   │   │   └── Navigation.vue    # 导航控制页
+│   │   │   ├── Navigation.vue    # 导航控制页
+│   │   │   └── Adb.vue           # ADB 工具页
 │   │   ├── App.vue               # 根组件
 │   │   └── main.js               # 应用入口
 │   ├── index.html
@@ -87,14 +93,29 @@
 uv pip install -e .
 ```
 
-### 2. 启动服务
+### 2. 启动后端服务
 
 ```bash
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. 访问 API 文档
+或
 
+```bash
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 3. 启动前端服务
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 4. 访问
+
+- 前端界面: http://localhost:5173
 - Swagger UI: http://localhost:8000/api/docs
 - ReDoc: http://localhost:8000/api/redoc
 
@@ -104,7 +125,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 | 方法 | 路径 | 描述 |
 |------|------|------|
-| POST | `/api/v1/device/connect` | 连接设备 |
+| POST | `/api/v1/device/connect` | 连接设备（支持 USB/WiFi） |
 | GET | `/api/v1/device/status` | 获取设备状态 |
 | POST | `/api/v1/device/disconnect` | 断开设备连接 |
 
@@ -169,6 +190,36 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | GET | `/api/v1/app/status/{package}` | 检查应用运行状态 |
 | GET | `/api/v1/app/current` | 获取当前前台应用 |
 
+### ADB 工具 - 应用管理
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/v1/adb/packages` | 获取已安装应用列表 |
+| GET | `/api/v1/adb/packages/{package_name}` | 获取应用详细信息 |
+| GET | `/api/v1/adb/packages-info` | 获取所有应用详细信息 |
+| POST | `/api/v1/adb/install` | 安装 APK |
+| DELETE | `/api/v1/adb/packages/{package_name}` | 卸载应用 |
+
+### ADB 工具 - 设备信息
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/v1/adb/device-info` | 获取设备详细信息 |
+| GET | `/api/v1/adb/battery` | 获取电池信息 |
+| GET | `/api/v1/adb/screen/resolution` | 获取屏幕分辨率 |
+| GET | `/api/v1/adb/screen/density` | 获取屏幕密度 |
+| GET | `/api/v1/adb/prop/{prop_name}` | 获取设备属性 |
+
+### ADB 工具 - Shell 与文件
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/v1/adb/shell` | 执行 Shell 命令 |
+| POST | `/api/v1/adb/push` | 推送文件到设备 |
+| POST | `/api/v1/adb/pull` | 从设备拉取文件 |
+| POST | `/api/v1/adb/screenshot` | 截取屏幕截图 |
+| POST | `/api/v1/adb/reboot` | 重启设备 |
+
 ## 配置说明
 
 通过 `.env` 文件或环境变量进行配置：
@@ -185,7 +236,18 @@ DEFAULT_DEVICE_SERIAL=     # 可选，指定默认设备序列号
 ### 连接设备
 
 ```bash
+# 自动选择设备
 curl -X POST "http://localhost:8000/api/v1/device/connect"
+
+# 通过序列号连接（USB）
+curl -X POST "http://localhost:8000/api/v1/device/connect" \
+  -H "Content-Type: application/json" \
+  -d '{"device_serial": "emulator-5554"}'
+
+# 通过 IP 连接（WiFi）
+curl -X POST "http://localhost:8000/api/v1/device/connect" \
+  -H "Content-Type: application/json" \
+  -d '{"device_serial": "192.168.1.100:5555"}'
 ```
 
 ### 点击元素
@@ -238,31 +300,40 @@ curl -X POST "http://localhost:8000/api/v1/input/screen-off"
 curl -X POST "http://localhost:8000/api/v1/input/unlock"
 ```
 
-### 获取当前应用
+### ADB 命令
 
 ```bash
-curl "http://localhost:8000/api/v1/app/current"
+# 获取已安装应用列表（第三方应用）
+curl "http://localhost:8000/api/v1/adb/packages?filter_type=third_party"
+
+# 获取应用详细信息
+curl "http://localhost:8000/api/v1/adb/packages/com.example.app"
+
+# 执行 Shell 命令
+curl -X POST "http://localhost:8000/api/v1/adb/shell" \
+  -H "Content-Type: application/json" \
+  -d '{"command": "ls /sdcard"}'
+
+# 获取设备信息
+curl "http://localhost:8000/api/v1/adb/device-info"
+
+# 获取电池信息
+curl "http://localhost:8000/api/v1/adb/battery"
+
+# 卸载应用
+curl -X DELETE "http://localhost:8000/api/v1/adb/packages/com.example.app"
 ```
 
-## 前端使用
-
-### 启动前端开发服务器
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 前端功能页面
+## 前端功能页面
 
 | 页面 | 路由 | 描述 |
 |------|------|------|
-| 仪表盘 | `/` | 设备状态总览 |
+| 控制台 | `/` | 设备状态总览、快捷操作 |
 | 设备管理 | `/device` | 设备连接状态 |
 | 输入控制 | `/input` | 点击、输入、滑动、元素定位、屏幕控制 |
 | 导航控制 | `/navigation` | 返回主页、返回、菜单等导航操作 |
 | 应用管理 | `/apps` | 启动、停止、清除应用数据 |
+| ADB 工具 | `/adb` | 设备信息、应用列表、Shell 命令执行 |
 
 ## 元素定位方式详解
 
@@ -308,9 +379,10 @@ element = device(xpath="//*[@resource-id='com.example:id/button']")
 ## 注意事项
 
 1. **设备连接**：使用 API 前需先调用 `/api/v1/device/connect` 连接设备
-2. **元素定位**：建议优先使用 resource-id 定位，稳定性最高
-3. **等待机制**：界面元素加载需要时间，建议使用 `wait-appear` 等待元素
-4. **权限要求**：确保设备已开启 USB 调试模式
+2. **WiFi 连接**：确保设备和服务器在同一网络，设备已开启 ADB over WiFi（端口默认 5555）
+3. **元素定位**：建议优先使用 resource-id 定位，稳定性最高
+4. **等待机制**：界面元素加载需要时间，建议使用 `wait-appear` 等待元素
+5. **权限要求**：确保设备已开启 USB 调试模式
 
 ## 许可证
 

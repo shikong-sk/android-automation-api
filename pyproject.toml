@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "uiautomator2>=3.5.0",
+    "adbutils>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -35,3 +36,7 @@ testpaths = ["tests"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[[tool.uv.index]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
