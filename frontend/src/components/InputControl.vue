@@ -24,7 +24,13 @@
                 :placeholder="clickPlaceholder"
                 clearable
                 class="flex-1"
-              />
+              >
+                <template #append v-if="clickLocateType === 'xpath'">
+                  <el-button @click="openXPathGenerator('click')">
+                    生成
+                  </el-button>
+                </template>
+              </el-input>
             </div>
             <div class="flex gap-2">
               <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
@@ -98,7 +104,13 @@
                 placeholder="输入定位值"
                 clearable
                 class="flex-1"
-              />
+              >
+                <template #append v-if="locateType === 'xpath'">
+                  <el-button @click="openXPathGenerator('locate')">
+                    生成
+                  </el-button>
+                </template>
+              </el-input>
             </div>
             <div class="flex gap-2">
               <el-button type="primary" :disabled="!locateValue || !locateType" @click="handleLocate">
@@ -205,6 +217,9 @@
           <el-button v-if="hierarchyXml" @click="copyHierarchy">
             复制
           </el-button>
+          <el-button type="success" @click="showXPathGenerator = true">
+            XPath 生成器
+          </el-button>
         </div>
         
         <!-- 搜索功能区 -->
@@ -266,6 +281,12 @@
         </div>
       </div>
     </el-card>
+
+    <!-- XPath 生成器弹窗 -->
+    <XPathGenerator
+      v-model="showXPathGenerator"
+      @insert="handleXPathInsert"
+    />
   </div>
 </template>
 
@@ -274,6 +295,7 @@ import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
 import { Pen, Code, Search, ArrowUp, ArrowDown } from '@vicons/fa'
+import XPathGenerator from './XPathGenerator.vue'
 
 const activeTab = ref('click')
 const clickLocateType = ref('id')
@@ -298,6 +320,26 @@ const searchFilterType = ref('all')
 const searchMatches = ref([])
 const currentMatchIndex = ref(-1)
 const xmlContainerRef = ref(null)
+
+// XPath 生成器相关
+const showXPathGenerator = ref(false)
+const xpathInsertTarget = ref('') // 'click' 或 'locate'
+
+function openXPathGenerator(target) {
+  xpathInsertTarget.value = target
+  showXPathGenerator.value = true
+}
+
+function handleXPathInsert(xpath) {
+  if (xpathInsertTarget.value === 'click') {
+    clickLocateValue.value = xpath
+    clickLocateType.value = 'xpath'
+  } else if (xpathInsertTarget.value === 'locate') {
+    locateValue.value = xpath
+    locateType.value = 'xpath'
+  }
+  ElMessage.success('XPath 已插入')
+}
 
 const clickPlaceholder = computed(() => {
   const placeholders = {

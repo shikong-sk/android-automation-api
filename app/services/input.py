@@ -130,7 +130,7 @@ class InputService(AutomationService):
         Returns:
             bool: 元素存在且点击成功返回 True，否则返回 False。
         """
-        element = self.device(xpath=xpath)
+        element = self.device.xpath(xpath)
         if element.exists:
             element.click()
             return True
@@ -181,7 +181,7 @@ class InputService(AutomationService):
             bool: 元素存在返回 True，否则返回 False。
         """
         for _ in range(3):
-            element = self.device(xpath=xpath)
+            element = self.device.xpath(xpath)
             if element.exists:
                 return True
             self.device.sleep(0.2)
@@ -281,7 +281,7 @@ class InputService(AutomationService):
                 "bounds": info.get("bounds", {}),
                 "enabled": info.get("enabled", False),
                 "focused": info.get("focused", False),
-                "selected": info.get("selected", False)
+                "selected": info.get("selected", False),
             }
         return None
 
@@ -307,7 +307,7 @@ class InputService(AutomationService):
                 "class_name": info.get("className", ""),
                 "resource_id": info.get("resourceName", ""),
                 "bounds": info.get("bounds", {}),
-                "enabled": info.get("enabled", False)
+                "enabled": info.get("enabled", False),
             }
         return None
 
@@ -333,7 +333,7 @@ class InputService(AutomationService):
                 "class_name": info.get("className", ""),
                 "resource_id": info.get("resourceName", ""),
                 "bounds": info.get("bounds", {}),
-                "enabled": info.get("enabled", False)
+                "enabled": info.get("enabled", False),
             }
         return None
 
@@ -355,13 +355,15 @@ class InputService(AutomationService):
         for element in all_elements:
             if element.exists:
                 info = element.info
-                elements.append({
-                    "text": info.get("text", ""),
-                    "class_name": info.get("className", ""),
-                    "resource_id": info.get("resourceName", ""),
-                    "bounds": info.get("bounds", {}),
-                    "enabled": info.get("enabled", False)
-                })
+                elements.append(
+                    {
+                        "text": info.get("text", ""),
+                        "class_name": info.get("className", ""),
+                        "resource_id": info.get("resourceName", ""),
+                        "bounds": info.get("bounds", {}),
+                        "enabled": info.get("enabled", False),
+                    }
+                )
         return elements
 
     def find_element_by_xpath(self, xpath: str) -> Optional[Dict[str, Any]]:
@@ -377,16 +379,16 @@ class InputService(AutomationService):
             Optional[Dict]: 元素信息字典。
                             元素不存在时返回 None。
         """
-        element = self.device(xpath=xpath)
+        element = self.device.xpath(xpath)
         if element.exists:
-            info = element.info
+            info = element.get()
             return {
                 "exists": True,
-                "text": info.get("text", ""),
-                "class_name": info.get("className", ""),
-                "resource_id": info.get("resourceName", ""),
-                "bounds": info.get("bounds", {}),
-                "enabled": info.get("enabled", False)
+                "text": info.attrib.get("text", ""),
+                "class_name": info.attrib.get("class", ""),
+                "resource_id": info.attrib.get("resource-id", ""),
+                "bounds": info.attrib.get("bounds", ""),
+                "enabled": info.attrib.get("enabled", "false") == "true",
             }
         return None
 
@@ -544,8 +546,6 @@ class InputService(AutomationService):
             return True
         except Exception:
             return False
-
-
 
     def unlock_screen(self) -> bool:
         """
