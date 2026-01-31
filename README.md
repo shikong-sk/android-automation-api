@@ -32,7 +32,8 @@
 │   │   ├── input.py              # 输入交互接口（含元素定位）
 │   │   ├── navigation.py         # 系统导航接口
 │   │   ├── app.py                # 应用管理接口
-│   │   └── adb.py                # ADB 命令接口
+│   │   ├── adb.py                # ADB 命令接口
+│   │   └── script.py             # 自动化脚本接口
 │   ├── core/                     # 核心模块
 │   │   ├── config.py             # 配置管理
 │   │   └── device.py             # 设备管理器（单例模式）
@@ -46,9 +47,12 @@
 │   │   ├── input.py              # 输入操作服务（含元素定位）
 │   │   ├── navigation.py         # 导航操作服务
 │   │   ├── app_service.py        # 应用管理服务
-│   │   └── adb_service.py        # ADB 命令服务
+│   │   ├── adb_service.py        # ADB 命令服务
+│   │   ├── script_parser.py      # 脚本解析器（词法/语法分析）
+│   │   └── script_executor.py    # 脚本执行器
 │   ├── main.py                   # 应用入口
 │   └── __init__.py               # 模块初始化
+├── scripts/                      # 脚本存储目录
 ├── frontend/                     # Vue 前端源码
 │   ├── src/
 │   │   ├── api/                  # API 客户端
@@ -58,13 +62,15 @@
 │   │   │   ├── device.js         # 设备相关 API
 │   │   │   ├── input.js          # 输入操作 API
 │   │   │   ├── navigation.js     # 导航控制 API
-│   │   │   └── adb.js            # ADB 命令 API
+│   │   │   ├── adb.js            # ADB 命令 API
+│   │   │   └── script.js         # 脚本管理 API（含 SSE 流式执行）
 │   │   ├── components/           # Vue 组件
 │   │   │   ├── AppManager.vue    # 应用管理组件
 │   │   │   ├── DeviceCard.vue    # 设备状态组件
 │   │   │   ├── InputControl.vue  # 输入操作组件
 │   │   │   ├── NavigationControl.vue # 导航控制组件
-│   │   │   └── AdbManager.vue    # ADB 工具组件
+│   │   │   ├── AdbManager.vue    # ADB 工具组件
+│   │   │   └── ScriptEditor.vue  # 脚本编辑器组件
 │   │   ├── layouts/              # 布局组件
 │   │   │   └── DefaultLayout.vue
 │   │   ├── pages/                # 页面组件
@@ -73,7 +79,8 @@
 │   │   │   ├── Device.vue        # 设备页
 │   │   │   ├── Input.vue         # 输入操作页
 │   │   │   ├── Navigation.vue    # 导航控制页
-│   │   │   └── Adb.vue           # ADB 工具页
+│   │   │   ├── Adb.vue           # ADB 工具页
+│   │   │   └── Script.vue        # 自动化脚本页
 │   │   ├── App.vue               # 根组件
 │   │   └── main.js               # 应用入口
 │   ├── index.html
@@ -324,6 +331,31 @@ curl "http://localhost:8000/api/v1/adb/battery"
 curl -X DELETE "http://localhost:8000/api/v1/adb/packages/com.example.app"
 ```
 
+### 脚本执行
+
+```bash
+# 执行脚本内容
+curl -X POST "http://localhost:8000/api/v1/script/execute" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "home\nwait 1\nlog \"完成\""}'
+
+# 执行脚本文件
+curl -X POST "http://localhost:8000/api/v1/script/execute/my_script.script"
+
+# 验证脚本语法
+curl -X POST "http://localhost:8000/api/v1/script/validate" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "click id:\"button\"\nwait 1"}'
+
+# 流式执行脚本（SSE）
+curl -N -X POST "http://localhost:8000/api/v1/script/execute/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "home\nwait 1\nlog \"完成\""}'
+
+# 停止正在执行的脚本
+curl -X POST "http://localhost:8000/api/v1/script/stop/{session_id}"
+```
+
 ## 前端功能页面
 
 | 页面 | 路由 | 描述 |
@@ -334,6 +366,193 @@ curl -X DELETE "http://localhost:8000/api/v1/adb/packages/com.example.app"
 | 导航控制 | `/navigation` | 返回主页、返回、菜单等导航操作 |
 | 应用管理 | `/apps` | 启动、停止、清除应用数据 |
 | ADB 工具 | `/adb` | 设备信息、应用列表、Shell 命令执行 |
+| 自动化脚本 | `/script` | 脚本编辑、执行、管理 |
+
+## 自动化脚本 DSL
+
+项目支持自定义 DSL 脚本，实现全自动化操作。脚本文件存储在 `scripts/` 目录下。
+
+### DSL 语法参考
+
+#### 基础命令
+
+```bash
+# 点击元素
+click id:"resource_id"           # 通过 resource-id 点击
+click text:"文本"                # 通过文本点击
+click xpath:"//Button[@text='确定']"  # 通过 XPath 点击
+
+# 输入文本
+input id:"input_id" "要输入的文本"
+
+# 清除文本
+clear id:"input_id"
+
+# 滑动屏幕
+swipe up 0.5                     # 向上滑动 50%
+swipe down 0.3                   # 向下滑动 30%
+swipe left                       # 向左滑动
+swipe right                      # 向右滑动
+
+# 等待
+wait 2                           # 等待 2 秒
+wait_element id:"loading" 10     # 等待元素出现，最多 10 秒
+wait_gone id:"loading" 10        # 等待元素消失，最多 10 秒
+```
+
+#### 导航命令
+
+```bash
+back                             # 返回
+home                             # 主页
+menu                             # 菜单
+recent                           # 最近应用
+```
+
+#### 应用命令
+
+```bash
+start_app "com.example.app"      # 启动应用
+stop_app "com.example.app"       # 停止应用
+clear_app "com.example.app"      # 清除应用数据
+```
+
+#### 屏幕控制
+
+```bash
+screen_on                        # 亮屏
+screen_off                       # 锁屏
+unlock                           # 解锁
+```
+
+#### 变量
+
+```bash
+set $name = "value"              # 设置变量
+set $text = get_text id:"id"     # 获取元素文本
+set $exists = exists id:"id"     # 检查元素是否存在
+
+# 使用变量
+click text:$name
+input id:"input" $text
+```
+
+#### 条件判断
+
+```bash
+if exists id:"button"
+    click id:"button"
+elif $var == "value"
+    log "变量匹配"
+else
+    log "未找到"
+end
+
+# 条件表达式
+# exists id:"xxx"        - 元素存在
+# not exists id:"xxx"    - 元素不存在
+# $var == "value"        - 变量等于
+# $var != "value"        - 变量不等于
+# $var                   - 变量为真
+```
+
+#### 循环
+
+```bash
+# 固定次数循环
+loop 5
+    click id:"button"
+    wait 1
+end
+
+# 条件循环
+while exists id:"loading"
+    wait 1
+end
+
+# 循环控制
+loop 10
+    if exists id:"done"
+        break                    # 跳出循环
+    end
+    click id:"next"
+    continue                     # 继续下一次
+end
+```
+
+#### 错误处理
+
+```bash
+try
+    click id:"maybe_not_exist"
+    wait 1
+catch
+    log "元素不存在，跳过"
+end
+```
+
+#### 子脚本调用
+
+```bash
+call "other_script.script"       # 调用其他脚本
+```
+
+#### 其他命令
+
+```bash
+log "日志消息"                   # 输出日志
+shell "ls /sdcard"               # 执行 shell 命令
+# 这是注释
+```
+
+### 脚本示例
+
+```bash
+# 自动打开设置并滑动
+start_app "com.android.settings"
+wait 2
+
+# 等待界面加载
+wait_element id:"android:id/title" 10
+
+# 查找并点击 WLAN
+if exists text:"WLAN"
+    click text:"WLAN"
+    wait 1
+else
+    log "未找到 WLAN"
+end
+
+# 滑动 3 次
+loop 3
+    swipe up 0.3
+    wait 0.5
+end
+
+# 返回主页
+home
+log "完成"
+```
+
+### 脚本 API
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/v1/script/list` | 获取脚本列表 |
+| GET | `/api/v1/script/get/{name}` | 获取脚本内容 |
+| POST | `/api/v1/script/save` | 保存脚本 |
+| DELETE | `/api/v1/script/delete/{name}` | 删除脚本 |
+| POST | `/api/v1/script/execute` | 执行脚本内容 |
+| POST | `/api/v1/script/execute/{name}` | 执行脚本文件 |
+| POST | `/api/v1/script/validate` | 验证脚本语法 |
+
+### 脚本 API - 流式执行（SSE）
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/v1/script/execute/stream` | 执行脚本并通过 SSE 实时返回日志 |
+| POST | `/api/v1/script/execute/stream/{name}` | 执行脚本文件并通过 SSE 实时返回日志 |
+| POST | `/api/v1/script/stop/{session_id}` | 停止正在执行的脚本 |
 
 ## 元素定位方式详解
 

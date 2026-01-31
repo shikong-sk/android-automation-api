@@ -6,7 +6,7 @@
 """
 
 from pydantic import BaseModel, Field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class ActionRequest(BaseModel):
@@ -19,6 +19,7 @@ class ActionRequest(BaseModel):
         action: 要执行的操作名称，对应服务类中的方法名。
         params: 操作所需的参数字典，键为参数名，值为参数值。
     """
+
     action: str = Field(..., description="操作类型")
     params: Dict[str, Any] = Field(default_factory=dict, description="操作参数")
 
@@ -34,6 +35,7 @@ class ActionResponse(BaseModel):
         result: 操作返回的结果数据
         message: 可选的提示信息
     """
+
     success: bool
-    result: Any | None = None
-    message: str | None = None
+    result: Optional[Any] = None
+    message: Optional[str] = None

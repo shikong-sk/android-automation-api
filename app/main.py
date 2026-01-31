@@ -17,7 +17,14 @@ Android Automation API 主应用模块
 from fastapi import FastAPI, applications
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import device_router, input_router, navigation_router, app_router, adb_router
+from app.api import (
+    device_router,
+    input_router,
+    navigation_router,
+    app_router,
+    adb_router,
+    script_router,
+)
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -68,6 +75,7 @@ app.include_router(input_router, prefix="/api/v1")
 app.include_router(navigation_router, prefix="/api/v1")
 app.include_router(app_router, prefix="/api/v1")
 app.include_router(adb_router, prefix="/api/v1")
+app.include_router(script_router, prefix="/api/v1")
 
 
 @app.get("/")

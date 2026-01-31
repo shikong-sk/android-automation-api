@@ -36,6 +36,12 @@ const routes = [
     name: 'Adb',
     component: () => import('@/pages/Adb.vue'),
     meta: { title: 'ADB 工具' }
+  },
+  {
+    path: '/script',
+    name: 'Script',
+    component: () => import('@/pages/Script.vue'),
+    meta: { title: '自动化脚本' }
   }
 ]
 

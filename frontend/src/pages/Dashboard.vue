@@ -5,14 +5,16 @@
       <p class="text-gray-500 mt-1">Android 设备自动化控制面板</p>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <!-- 设备和导航 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
       <DeviceCard />
-      <InputControl />
       <NavigationControl />
+      <AppManager />
     </div>
     
-    <div class="mt-6">
-      <AppManager />
+    <!-- 输入控制 - 单独一行，全宽 -->
+    <div class="mb-6">
+      <InputControl />
     </div>
   </div>
 </template>

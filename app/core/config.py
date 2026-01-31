@@ -5,6 +5,7 @@
 支持从 .env 文件加载配置，支持开发/生产环境切换。
 """
 
+from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Android Automation API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
-    DEFAULT_DEVICE_SERIAL: str | None = None
+    DEFAULT_DEVICE_SERIAL: Optional[str] = None
 
     class Config:
         env_file = ".env"

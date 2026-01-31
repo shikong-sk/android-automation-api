@@ -7,27 +7,30 @@
       </div>
     </template>
     
-    <div class="grid grid-cols-3 gap-3">
-      <el-button @click="handleHome">
-        <el-icon class="mr-1"><Home /></el-icon>
-        Home
-      </el-button>
-      <el-button @click="handleBack">
-        <el-icon class="mr-1"><ArrowLeft /></el-icon>
-        返回
-      </el-button>
-      <el-button @click="handleMenu">
-        <el-icon class="mr-1"><Cog /></el-icon>
-        菜单
-      </el-button>
-      <el-button @click="handleGoHome">
-        <el-icon class="mr-1"><Home /></el-icon>
-        主页
-      </el-button>
-      <el-button @click="handleRecentApps">
-        <el-icon class="mr-1"><Th /></el-icon>
-        最近
-      </el-button>
+    <div class="space-y-4">
+      <p class="text-sm text-gray-500">系统导航按键</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <el-button class="nav-btn" @click="handleBack">
+          <el-icon class="mr-1"><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <el-button class="nav-btn" @click="handleHome">
+          <el-icon class="mr-1"><Home /></el-icon>
+          Home
+        </el-button>
+        <el-button class="nav-btn" @click="handleRecentApps">
+          <el-icon class="mr-1"><Th /></el-icon>
+          最近应用
+        </el-button>
+        <el-button class="nav-btn" @click="handleMenu">
+          <el-icon class="mr-1"><Cog /></el-icon>
+          菜单
+        </el-button>
+        <el-button class="nav-btn" type="primary" @click="handleGoHome">
+          <el-icon class="mr-1"><Home /></el-icon>
+          返回主页
+        </el-button>
+      </div>
     </div>
   </el-card>
 </template>
@@ -82,3 +85,9 @@ async function handleRecentApps() {
   }
 }
 </script>
+
+<style scoped>
+.nav-btn {
+  @apply w-full justify-center;
+}
+</style>

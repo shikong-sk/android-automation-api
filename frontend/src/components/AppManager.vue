@@ -14,7 +14,9 @@
         v-model="packageName"
         placeholder="输入应用包名（如 com.example.app）"
         clearable
-      />
+      >
+        <template #prepend>包名</template>
+      </el-input>
       
       <div class="flex flex-wrap gap-2">
         <el-button type="primary" :disabled="!packageName" @click="handleStart">
@@ -42,8 +44,12 @@
         </el-button>
       </div>
       
-      <div v-if="appInfo" class="bg-gray-100 p-3 rounded text-sm">
-        <pre>{{ JSON.stringify(appInfo, null, 2) }}</pre>
+      <div 
+        v-if="appInfo" 
+        class="bg-gray-100 p-3 rounded text-sm overflow-auto resize-y"
+        style="min-height: 80px; height: 120px; max-height: 300px;"
+      >
+        <pre class="whitespace-pre-wrap">{{ JSON.stringify(appInfo, null, 2) }}</pre>
       </div>
     </div>
   </el-card>

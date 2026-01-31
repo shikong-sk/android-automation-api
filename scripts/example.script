@@ -1,0 +1,41 @@
+# 示例脚本 - 演示 DSL 语法
+# ===========================
+
+# 设置变量
+set $app_package = "com.android.settings"
+
+# 启动设置应用
+log "启动设置应用"
+start_app $app_package
+wait 2
+
+# 等待界面加载
+wait_element id:"android:id/title" 10
+
+# 条件判断示例
+if exists text:"WLAN"
+    log "找到 WLAN 选项"
+    click text:"WLAN"
+    wait 1
+elif exists text:"Wi-Fi"
+    log "找到 Wi-Fi 选项"
+    click text:"Wi-Fi"
+    wait 1
+else
+    log "未找到网络选项"
+end
+
+# 循环示例
+log "执行滑动操作 3 次"
+loop 3
+    swipe up 0.3
+    wait 0.5
+end
+
+# 返回主页
+log "返回主页"
+back
+wait 1
+home
+
+log "脚本执行完成"

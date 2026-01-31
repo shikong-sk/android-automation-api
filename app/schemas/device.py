@@ -5,6 +5,7 @@
 使用 Pydantic 实现数据验证和序列化。
 """
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -17,7 +18,8 @@ class DeviceConnectRequest(BaseModel):
     Attributes:
         device_serial: 设备序列号。如果为空或为 None，将自动选择第一个可用设备。
     """
-    device_serial: str | None = Field(None, description="设备序列号，为空则自动连接")
+
+    device_serial: Optional[str] = Field(None, description="设备序列号，为空则自动连接")
 
 
 class DeviceInfoResponse(BaseModel):
@@ -32,6 +34,7 @@ class DeviceInfoResponse(BaseModel):
         api_level: Android API 级别
         battery_level: 电池电量 (0-100)
     """
+
     serial: str
     product_name: str
     api_level: int
@@ -48,5 +51,6 @@ class DeviceStatusResponse(BaseModel):
         connected: 设备是否已连接
         device_info: 已连接设备的信息，未连接时为 None
     """
+
     connected: bool
-    device_info: DeviceInfoResponse | None = None
+    device_info: Optional[DeviceInfoResponse] = None

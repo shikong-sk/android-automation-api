@@ -36,6 +36,10 @@
           <el-icon><Terminal /></el-icon>
           <span>ADB 工具</span>
         </el-menu-item>
+        <el-menu-item index="/script">
+          <el-icon><Code /></el-icon>
+          <span>自动化脚本</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -48,7 +52,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Magic, TachometerAlt, Plug, Pen, Compass, Folder, Terminal } from '@vicons/fa'
+import { Magic, TachometerAlt, Plug, Pen, Compass, Folder, Terminal, Code } from '@vicons/fa'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)

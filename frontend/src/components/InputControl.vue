@@ -1,197 +1,279 @@
 <template>
-  <el-card shadow="hover">
-    <template #header>
-      <div class="flex items-center gap-2">
-        <el-icon><Pen /></el-icon>
-        <span class="font-semibold">输入操作</span>
-      </div>
-    </template>
-    
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="点击元素" name="click">
-        <div class="space-y-4">
-          <div class="flex gap-2">
-            <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
-              <el-option label="By ID" value="id" />
-              <el-option label="By Text" value="text" />
-              <el-option label="By Class" value="class" />
-              <el-option label="By XPath" value="xpath" />
-            </el-select>
+  <div class="space-y-6">
+    <!-- 输入操作卡片 -->
+    <el-card shadow="hover">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <el-icon><Pen /></el-icon>
+          <span class="font-semibold">输入操作</span>
+        </div>
+      </template>
+      
+      <el-tabs v-model="activeTab" class="input-tabs">
+        <el-tab-pane label="点击元素" name="click">
+          <div class="space-y-4">
+            <div class="flex gap-2">
+              <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
+                <el-option label="By ID" value="id" />
+                <el-option label="By Text" value="text" />
+                <el-option label="By Class" value="class" />
+                <el-option label="By XPath" value="xpath" />
+              </el-select>
+              <el-input
+                v-model="clickLocateValue"
+                :placeholder="clickPlaceholder"
+                clearable
+                class="flex-1"
+              />
+            </div>
+            <div class="flex gap-2">
+              <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
+                点击元素
+              </el-button>
+              <el-button :disabled="!clickLocateValue" @click="handleExists">
+                检查存在
+              </el-button>
+            </div>
+          </div>
+        </el-tab-pane>
+        
+        <el-tab-pane label="输入文本" name="text">
+          <div class="space-y-4">
             <el-input
-              v-model="clickLocateValue"
-              :placeholder="clickPlaceholder"
+              v-model="textResourceId"
+              placeholder="输入框的 resource-id"
               clearable
-              class="flex-1"
             />
+            <el-input
+              v-model="textInput"
+              placeholder="要输入的文本内容"
+              clearable
+            />
+            <div class="flex gap-2 flex-wrap">
+              <el-button type="primary" :disabled="!textResourceId || !textInput" @click="handleSetText">
+                输入文本
+              </el-button>
+              <el-button :disabled="!textResourceId" @click="handleClearText">
+                清除文本
+              </el-button>
+              <el-button :disabled="!textResourceId" @click="handleSendAction">
+                完成 (Send Action)
+              </el-button>
+            </div>
           </div>
-          <div class="flex gap-2">
-            <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
-              点击元素
-            </el-button>
-            <el-button :disabled="!clickLocateValue" @click="handleExists">
-              检查存在
-            </el-button>
+        </el-tab-pane>
+        
+        <el-tab-pane label="滑动屏幕" name="swipe">
+          <div class="space-y-4">
+            <div>
+              <p class="text-sm text-gray-500 mb-2">滑动方向</p>
+              <el-radio-group v-model="swipeDirection">
+                <el-radio-button value="up">向上</el-radio-button>
+                <el-radio-button value="down">向下</el-radio-button>
+                <el-radio-button value="left">向左</el-radio-button>
+                <el-radio-button value="right">向右</el-radio-button>
+              </el-radio-group>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-2">滑动比例: {{ swipePercent }}</p>
+              <el-slider v-model="swipePercent" :min="0.1" :max="0.9" :step="0.1" />
+            </div>
+            <div class="flex justify-end">
+              <el-button type="primary" @click="handleSwipe">滑动</el-button>
+            </div>
           </div>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="输入文本" name="text">
-        <el-input
-          v-model="textResourceId"
-          placeholder="输入框的 resource-id"
-          clearable
-          class="mb-4"
-        />
-        <el-input
-          v-model="textInput"
-          placeholder="要输入的文本内容"
-          clearable
-          class="mb-4"
-        />
-        <div class="flex gap-2">
-          <el-button type="primary" :disabled="!textResourceId || !textInput" @click="handleSetText">
-            输入文本
-          </el-button>
-          <el-button :disabled="!textResourceId" @click="handleClearText">
-            清除文本
-          </el-button>
-          <el-button :disabled="!textResourceId" @click="handleSendAction">
-            完成 (Send Action)
-          </el-button>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="滑动屏幕" name="swipe">
-        <div class="space-y-4">
-          <div>
-            <p class="text-sm text-gray-500 mb-2">滑动方向</p>
-            <el-radio-group v-model="swipeDirection">
-              <el-radio-button value="up">向上</el-radio-button>
-              <el-radio-button value="down">向下</el-radio-button>
-              <el-radio-button value="left">向左</el-radio-button>
-              <el-radio-button value="right">向右</el-radio-button>
-            </el-radio-group>
+        </el-tab-pane>
+        
+        <el-tab-pane label="元素定位" name="locate">
+          <div class="space-y-4">
+            <div class="flex gap-2">
+              <el-select v-model="locateType" placeholder="选择定位方式" class="w-32">
+                <el-option label="By ID" value="id" />
+                <el-option label="By Text" value="text" />
+                <el-option label="By Class" value="class" />
+                <el-option label="By XPath" value="xpath" />
+              </el-select>
+              <el-input
+                v-model="locateValue"
+                placeholder="输入定位值"
+                clearable
+                class="flex-1"
+              />
+            </div>
+            <div class="flex gap-2">
+              <el-button type="primary" :disabled="!locateValue || !locateType" @click="handleLocate">
+                查找元素
+              </el-button>
+              <el-button v-if="locateType === 'class'" :disabled="!locateValue" @click="handleFindAll">
+                查找全部
+              </el-button>
+            </div>
+            <div 
+              v-if="locateResult" 
+              class="bg-gray-100 p-3 rounded text-sm overflow-auto resize-y"
+              style="min-height: 100px; height: 200px; max-height: 400px;"
+            >
+              <pre class="whitespace-pre-wrap">{{ JSON.stringify(locateResult, null, 2) }}</pre>
+            </div>
           </div>
-          <div>
-            <p class="text-sm text-gray-500 mb-2">滑动比例: {{ swipePercent }}</p>
-            <el-slider v-model="swipePercent" :min="0.1" :max="0.9" :step="0.1" />
+        </el-tab-pane>
+        
+        <el-tab-pane label="等待元素" name="wait">
+          <div class="space-y-4">
+            <el-input
+              v-model="waitResourceId"
+              placeholder="输入元素的 resource-id"
+              clearable
+            />
+            <div>
+              <p class="text-sm text-gray-500 mb-2">等待时间（秒）: {{ waitTimeout }}</p>
+              <el-slider v-model="waitTimeout" :min="1" :max="30" :step="1" />
+            </div>
+            <div class="flex gap-2">
+              <el-button type="primary" :disabled="!waitResourceId" @click="handleWaitAppear">
+                等待出现
+              </el-button>
+              <el-button :disabled="!waitResourceId" @click="handleWaitGone">
+                等待消失
+              </el-button>
+            </div>
           </div>
-          <div class="flex justify-end">
-            <el-button type="primary" @click="handleSwipe">滑动</el-button>
-          </div>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="元素定位" name="locate">
-        <div class="space-y-4">
-          <el-input
-            v-model="locateValue"
-            placeholder="输入定位值"
-            clearable
-          />
-          <div class="flex gap-2">
-            <el-select v-model="locateType" placeholder="选择定位方式" class="w-40">
-              <el-option label="By ID" value="id" />
-              <el-option label="By Text" value="text" />
-              <el-option label="By Class" value="class" />
-              <el-option label="By XPath" value="xpath" />
-            </el-select>
-            <el-button type="primary" :disabled="!locateValue || !locateType" @click="handleLocate">
-              查找元素
-            </el-button>
-            <el-button v-if="locateType === 'class'" :disabled="!locateValue" @click="handleFindAll">
-              查找全部
-            </el-button>
-          </div>
-          <div v-if="locateResult" class="bg-gray-100 p-3 rounded text-sm max-h-60 overflow-auto">
-            <pre>{{ JSON.stringify(locateResult, null, 2) }}</pre>
-          </div>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="等待元素" name="wait">
-        <div class="space-y-4">
-          <el-input
-            v-model="waitResourceId"
-            placeholder="输入元素的 resource-id"
-            clearable
-          />
-          <div>
-            <p class="text-sm text-gray-500 mb-2">等待时间（秒）: {{ waitTimeout }}</p>
-            <el-slider v-model="waitTimeout" :min="1" :max="30" :step="1" />
-          </div>
-          <div class="flex gap-2">
-            <el-button type="primary" :disabled="!waitResourceId" @click="handleWaitAppear">
-              等待出现
-            </el-button>
-            <el-button :disabled="!waitResourceId" @click="handleWaitGone">
-              等待消失
-            </el-button>
-          </div>
-        </div>
-      </el-tab-pane>
+        </el-tab-pane>
 
-      <el-tab-pane label="元素信息" name="info">
-        <div class="space-y-4">
-          <el-input
-            v-model="infoResourceId"
-            placeholder="输入元素的 resource-id"
-            clearable
-          />
-          <div class="flex gap-2">
-            <el-button type="primary" :disabled="!infoResourceId" @click="handleGetText">
-              获取文本
-            </el-button>
-            <el-button :disabled="!infoResourceId" @click="handleGetBounds">
-              获取边界
-            </el-button>
+        <el-tab-pane label="元素信息" name="info">
+          <div class="space-y-4">
+            <el-input
+              v-model="infoResourceId"
+              placeholder="输入元素的 resource-id"
+              clearable
+            />
+            <div class="flex gap-2">
+              <el-button type="primary" :disabled="!infoResourceId" @click="handleGetText">
+                获取文本
+              </el-button>
+              <el-button :disabled="!infoResourceId" @click="handleGetBounds">
+                获取边界
+              </el-button>
+            </div>
+            <div 
+              v-if="elementInfo" 
+              class="bg-gray-100 p-3 rounded text-sm overflow-auto resize-y"
+              style="min-height: 80px; height: 120px; max-height: 300px;"
+            >
+              <pre class="whitespace-pre-wrap">{{ JSON.stringify(elementInfo, null, 2) }}</pre>
+            </div>
           </div>
-          <div v-if="elementInfo" class="bg-gray-100 p-3 rounded text-sm">
-            <pre>{{ JSON.stringify(elementInfo, null, 2) }}</pre>
-          </div>
-        </div>
-      </el-tab-pane>
+        </el-tab-pane>
 
-      <el-tab-pane label="界面结构" name="hierarchy">
-        <div class="space-y-4">
-          <el-button type="primary" @click="handleGetHierarchy">
+        <el-tab-pane label="屏幕控制" name="screen">
+          <div class="space-y-4">
+            <p class="text-sm text-gray-500">控制设备屏幕状态</p>
+            <div class="flex gap-2 flex-wrap">
+              <el-button type="primary" @click="handleScreenOn">
+                亮屏
+              </el-button>
+              <el-button @click="handleScreenOff">
+                锁屏
+              </el-button>
+              <el-button type="success" @click="handleUnlock">
+                解锁
+              </el-button>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
+
+    <!-- 界面结构卡片 -->
+    <el-card shadow="hover">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <el-icon><Code /></el-icon>
+          <span class="font-semibold">界面结构</span>
+        </div>
+      </template>
+      
+      <div class="space-y-4">
+        <!-- 操作按钮 -->
+        <div class="flex gap-2 flex-wrap">
+          <el-button type="primary" @click="handleGetHierarchy" :loading="loadingHierarchy">
             获取当前界面 XML
           </el-button>
-          <el-button @click="handleRefreshXml">
+          <el-button @click="handleRefreshXml" :loading="loadingHierarchy">
             刷新
           </el-button>
-          <div v-if="hierarchyXml" class="bg-gray-100 p-3 rounded text-sm max-h-100 overflow-auto">
-            <pre>{{ hierarchyXml }}</pre>
+          <el-button v-if="hierarchyXml" @click="copyHierarchy">
+            复制
+          </el-button>
+        </div>
+        
+        <!-- 搜索功能区 -->
+        <div v-if="hierarchyXml" class="space-y-3">
+          <div class="flex gap-2 flex-wrap items-center">
+            <el-select v-model="searchFilterType" placeholder="过滤属性" class="w-36">
+              <el-option label="全部内容" value="all" />
+              <el-option label="resource-id" value="resource-id" />
+              <el-option label="text" value="text" />
+              <el-option label="class" value="class" />
+              <el-option label="content-desc" value="content-desc" />
+              <el-option label="bounds" value="bounds" />
+            </el-select>
+            <el-input
+              v-model="searchKeyword"
+              placeholder="输入搜索关键词..."
+              clearable
+              class="flex-1"
+              @input="handleSearch"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+          
+          <!-- 搜索结果导航 -->
+          <div v-if="searchKeyword && searchMatches.length > 0" class="flex items-center gap-3">
+            <span class="text-sm text-gray-500">
+              找到 <span class="text-blue-600 font-semibold">{{ searchMatches.length }}</span> 个匹配
+              <span v-if="currentMatchIndex >= 0" class="ml-1">
+                ({{ currentMatchIndex + 1 }}/{{ searchMatches.length }})
+              </span>
+            </span>
+            <div class="flex gap-1">
+              <el-button size="small" :disabled="searchMatches.length === 0" @click="goToPrevMatch">
+                <el-icon><ArrowUp /></el-icon>
+                上一个
+              </el-button>
+              <el-button size="small" :disabled="searchMatches.length === 0" @click="goToNextMatch">
+                下一个
+                <el-icon><ArrowDown /></el-icon>
+              </el-button>
+            </div>
+          </div>
+          <div v-else-if="searchKeyword && searchMatches.length === 0" class="text-sm text-gray-400">
+            未找到匹配内容
           </div>
         </div>
-      </el-tab-pane>
-
-      <el-tab-pane label="亮屏锁屏" name="screen">
-        <div class="space-y-4">
-          <div class="flex gap-2">
-            <el-button type="primary" @click="handleScreenOn">
-              亮屏
-            </el-button>
-            <el-button @click="handleScreenOff">
-              锁屏
-            </el-button>
-          </div>
-          <div class="flex gap-2">
-            <el-button @click="handleUnlock">
-              解锁
-            </el-button>
-          </div>
+        
+        <!-- XML 展示区 -->
+        <div 
+          v-if="hierarchyXml" 
+          ref="xmlContainerRef"
+          class="bg-gray-900 text-green-400 p-3 rounded text-xs font-mono overflow-auto resize-y"
+          style="min-height: 200px; height: 400px; max-height: 700px;"
+        >
+          <pre class="whitespace-pre-wrap" v-html="highlightedXml"></pre>
         </div>
-      </el-tab-pane>
-    </el-tabs>
-  </el-card>
+      </div>
+    </el-card>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
-import { Pen } from '@vicons/fa'
+import { Pen, Code, Search, ArrowUp, ArrowDown } from '@vicons/fa'
 
 const activeTab = ref('click')
 const clickLocateType = ref('id')
@@ -208,6 +290,14 @@ const waitTimeout = ref(10)
 const infoResourceId = ref('')
 const elementInfo = ref(null)
 const hierarchyXml = ref('')
+const loadingHierarchy = ref(false)
+
+// 搜索相关状态
+const searchKeyword = ref('')
+const searchFilterType = ref('all')
+const searchMatches = ref([])
+const currentMatchIndex = ref(-1)
+const xmlContainerRef = ref(null)
 
 const clickPlaceholder = computed(() => {
   const placeholders = {
@@ -395,6 +485,7 @@ async function handleGetBounds() {
 }
 
 async function handleGetHierarchy() {
+  loadingHierarchy.value = true
   try {
     const result = await inputApi.getHierarchy()
     hierarchyXml.value = result.xml || ''
@@ -402,11 +493,18 @@ async function handleGetHierarchy() {
   } catch (err) {
     ElMessage.error('获取界面结构失败')
     hierarchyXml.value = ''
+  } finally {
+    loadingHierarchy.value = false
   }
 }
 
 async function handleRefreshXml() {
   await handleGetHierarchy()
+}
+
+function copyHierarchy() {
+  navigator.clipboard.writeText(hierarchyXml.value)
+  ElMessage.success('已复制到剪贴板')
 }
 
 async function handleScreenOn() {
@@ -435,4 +533,142 @@ async function handleUnlock() {
     ElMessage.error('解锁失败')
   }
 }
+
+// 搜索功能：高亮显示的 XML
+const highlightedXml = computed(() => {
+  if (!hierarchyXml.value) return ''
+  if (!searchKeyword.value) {
+    return escapeHtml(hierarchyXml.value)
+  }
+  
+  const keyword = searchKeyword.value
+  let xmlContent = hierarchyXml.value
+  
+  // 根据过滤类型构建搜索内容
+  if (searchFilterType.value !== 'all') {
+    // 只在特定属性中搜索
+    const attrPattern = new RegExp(
+      `(${searchFilterType.value}="[^"]*)(${escapeRegExp(keyword)})([^"]*")`,
+      'gi'
+    )
+    return escapeHtml(xmlContent).replace(
+      new RegExp(`(${escapeRegExp(searchFilterType.value)}=&quot;[^&]*)(${escapeRegExp(escapeHtml(keyword))})([^&]*&quot;)`, 'gi'),
+      (match, before, kw, after, offset) => {
+        return `${before}<mark class="search-highlight" data-match-index="${offset}">${kw}</mark>${after}`
+      }
+    )
+  }
+  
+  // 全局搜索并高亮
+  const escapedXml = escapeHtml(xmlContent)
+  const escapedKeyword = escapeHtml(keyword)
+  const regex = new RegExp(`(${escapeRegExp(escapedKeyword)})`, 'gi')
+  
+  let matchIndex = 0
+  return escapedXml.replace(regex, (match) => {
+    return `<mark class="search-highlight" data-match-index="${matchIndex++}">${match}</mark>`
+  })
+})
+
+// 搜索处理函数
+function handleSearch() {
+  if (!searchKeyword.value || !hierarchyXml.value) {
+    searchMatches.value = []
+    currentMatchIndex.value = -1
+    return
+  }
+  
+  const keyword = searchKeyword.value
+  let content = hierarchyXml.value
+  
+  // 根据过滤类型搜索
+  if (searchFilterType.value !== 'all') {
+    // 只在特定属性中搜索
+    const attrRegex = new RegExp(`${searchFilterType.value}="[^"]*${escapeRegExp(keyword)}[^"]*"`, 'gi')
+    const matches = content.match(attrRegex) || []
+    searchMatches.value = matches
+  } else {
+    // 全局搜索
+    const regex = new RegExp(escapeRegExp(keyword), 'gi')
+    const matches = content.match(regex) || []
+    searchMatches.value = matches
+  }
+  
+  // 如果有匹配，自动跳转到第一个
+  if (searchMatches.value.length > 0) {
+    currentMatchIndex.value = 0
+    nextTick(() => scrollToMatch(0))
+  } else {
+    currentMatchIndex.value = -1
+  }
+}
+
+// 跳转到上一个匹配
+function goToPrevMatch() {
+  if (searchMatches.value.length === 0) return
+  
+  currentMatchIndex.value = currentMatchIndex.value <= 0 
+    ? searchMatches.value.length - 1 
+    : currentMatchIndex.value - 1
+  
+  nextTick(() => scrollToMatch(currentMatchIndex.value))
+}
+
+// 跳转到下一个匹配
+function goToNextMatch() {
+  if (searchMatches.value.length === 0) return
+  
+  currentMatchIndex.value = currentMatchIndex.value >= searchMatches.value.length - 1 
+    ? 0 
+    : currentMatchIndex.value + 1
+  
+  nextTick(() => scrollToMatch(currentMatchIndex.value))
+}
+
+// 滚动到指定匹配位置
+function scrollToMatch(index) {
+  if (!xmlContainerRef.value) return
+  
+  const marks = xmlContainerRef.value.querySelectorAll('mark.search-highlight')
+  
+  // 移除所有当前高亮
+  marks.forEach(mark => mark.classList.remove('current-match'))
+  
+  if (marks[index]) {
+    marks[index].classList.add('current-match')
+    marks[index].scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+// 辅助函数：转义 HTML
+function escapeHtml(text) {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+// 辅助函数：转义正则表达式特殊字符
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 </script>
+
+<style scoped>
+.input-tabs :deep(.el-tabs__content) {
+  padding: 16px 0;
+}
+
+/* 搜索高亮样式 */
+:deep(.search-highlight) {
+  background-color: #fbbf24;
+  color: #1f2937;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+:deep(.search-highlight.current-match) {
+  background-color: #f97316;
+  color: white;
+  box-shadow: 0 0 0 2px #f97316;
+}
+</style>

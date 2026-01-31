@@ -9,6 +9,7 @@
 - 检查应用运行状态
 """
 
+from typing import Optional
 from .base import AutomationService
 
 
@@ -68,7 +69,7 @@ class AppService(AutomationService):
         self.device.app_clear(package_name)
         return True
 
-    def get_app_version(self, package_name: str) -> str | None:
+    def get_app_version(self, package_name: str) -> Optional[str]:
         """
         获取应用的版本号
 

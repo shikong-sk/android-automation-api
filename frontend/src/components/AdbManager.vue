@@ -153,8 +153,12 @@
           </template>
         </el-input>
         
-        <div v-if="shellOutput !== null" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-auto max-h-64">
-          <pre>{{ shellOutput }}</pre>
+        <div 
+          v-if="shellOutput !== null" 
+          class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-auto resize-y"
+          style="min-height: 100px; height: 200px; max-height: 500px;"
+        >
+          <pre class="whitespace-pre-wrap">{{ shellOutput }}</pre>
         </div>
       </div>
     </el-card>

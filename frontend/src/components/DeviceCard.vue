@@ -134,6 +134,6 @@ async function handleRefresh() {
 
 <style scoped>
 .device-card {
-  @apply w-full max-w-sm;
+  @apply w-full;
 }
 </style>
