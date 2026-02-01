@@ -38,6 +38,12 @@ class TokenType(Enum):
     LOG = auto()
     SHELL = auto()
 
+    # 人类模拟操作关键字
+    HUMAN_CLICK = auto()
+    HUMAN_DOUBLE_CLICK = auto()
+    HUMAN_LONG_PRESS = auto()
+    HUMAN_DRAG = auto()
+
     # 控制流关键字
     NOT = auto()
     IF = auto()
@@ -227,6 +233,11 @@ class ScriptLexer:
         "shell": TokenType.SHELL,
         "break": TokenType.BREAK,
         "continue": TokenType.CONTINUE,
+        # 人类模拟操作关键字
+        "human_click": TokenType.HUMAN_CLICK,
+        "human_double_click": TokenType.HUMAN_DOUBLE_CLICK,
+        "human_long_press": TokenType.HUMAN_LONG_PRESS,
+        "human_drag": TokenType.HUMAN_DRAG,
     }
 
     SELECTOR_KEYWORDS: Dict[str, TokenType] = {
@@ -467,6 +478,11 @@ class ScriptParser:
         TokenType.EXISTS,
         TokenType.LOG,
         TokenType.SHELL,
+        # 人类模拟操作
+        TokenType.HUMAN_CLICK,
+        TokenType.HUMAN_DOUBLE_CLICK,
+        TokenType.HUMAN_LONG_PRESS,
+        TokenType.HUMAN_DRAG,
     }
 
     SELECTOR_TOKENS = {
@@ -588,7 +604,24 @@ class ScriptParser:
             elif self.current_token().type == TokenType.NUMBER:
                 node.args.append(self.advance().value)
             elif self.current_token().type == TokenType.IDENTIFIER:
-                node.args.append(self.advance().value)
+                # 检查是否是命名参数（identifier = value）
+                identifier = self.advance().value
+                if self.current_token().type == TokenType.EQUALS:
+                    self.advance()  # 消费 '='
+                    # 获取值
+                    if self.current_token().type in (
+                        TokenType.STRING,
+                        TokenType.NUMBER,
+                        TokenType.IDENTIFIER,
+                    ):
+                        value = self.advance().value
+                        # 将命名参数组合为 "key=value" 格式
+                        node.args.append(f"{identifier}={value}")
+                    else:
+                        # 没有值，只添加标识符
+                        node.args.append(identifier)
+                else:
+                    node.args.append(identifier)
             elif self.current_token().type == TokenType.COMMA:
                 self.advance()
             else:
@@ -626,7 +659,24 @@ class ScriptParser:
                 elif self.current_token().type == TokenType.NUMBER:
                     node.command_args.append(self.advance().value)
                 elif self.current_token().type == TokenType.IDENTIFIER:
-                    node.command_args.append(self.advance().value)
+                    # 检查是否是命名参数（identifier = value）
+                    identifier = self.advance().value
+                    if self.current_token().type == TokenType.EQUALS:
+                        self.advance()  # 消费 '='
+                        # 获取值
+                        if self.current_token().type in (
+                            TokenType.STRING,
+                            TokenType.NUMBER,
+                            TokenType.IDENTIFIER,
+                        ):
+                            value = self.advance().value
+                            # 将命名参数组合为 "key=value" 格式
+                            node.command_args.append(f"{identifier}={value}")
+                        else:
+                            # 没有值，只添加标识符
+                            node.command_args.append(identifier)
+                    else:
+                        node.command_args.append(identifier)
                 elif self.current_token().type == TokenType.COMMA:
                     self.advance()
                 else:
@@ -674,7 +724,24 @@ class ScriptParser:
                 elif self.current_token().type == TokenType.NUMBER:
                     node.args.append(self.advance().value)
                 elif self.current_token().type == TokenType.IDENTIFIER:
-                    node.args.append(self.advance().value)
+                    # 检查是否是命名参数（identifier = value）
+                    identifier = self.advance().value
+                    if self.current_token().type == TokenType.EQUALS:
+                        self.advance()  # 消费 '='
+                        # 获取值
+                        if self.current_token().type in (
+                            TokenType.STRING,
+                            TokenType.NUMBER,
+                            TokenType.IDENTIFIER,
+                        ):
+                            value = self.advance().value
+                            # 将命名参数组合为 "key=value" 格式
+                            node.args.append(f"{identifier}={value}")
+                        else:
+                            # 没有值，只添加标识符
+                            node.args.append(identifier)
+                    else:
+                        node.args.append(identifier)
                 elif self.current_token().type == TokenType.COMMA:
                     self.advance()
                 else:
@@ -865,7 +932,24 @@ class ScriptParser:
             elif self.current_token().type == TokenType.NUMBER:
                 node.args.append(self.advance().value)
             elif self.current_token().type == TokenType.IDENTIFIER:
-                node.args.append(self.advance().value)
+                # 检查是否是命名参数（identifier = value）
+                identifier = self.advance().value
+                if self.current_token().type == TokenType.EQUALS:
+                    self.advance()  # 消费 '='
+                    # 获取值
+                    if self.current_token().type in (
+                        TokenType.STRING,
+                        TokenType.NUMBER,
+                        TokenType.IDENTIFIER,
+                    ):
+                        value = self.advance().value
+                        # 将命名参数组合为 "key=value" 格式
+                        node.args.append(f"{identifier}={value}")
+                    else:
+                        # 没有值，只添加标识符
+                        node.args.append(identifier)
+                else:
+                    node.args.append(identifier)
             elif self.current_token().type == TokenType.COMMA:
                 self.advance()
             else:

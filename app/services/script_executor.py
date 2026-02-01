@@ -450,6 +450,24 @@ class ScriptExecutor:
                 return result
             return ""
 
+        # ============ 人类模拟操作 ============
+
+        # 人类模拟点击
+        elif command == "human_click":
+            return self._execute_human_click(node, args)
+
+        # 人类模拟双击
+        elif command == "human_double_click":
+            return self._execute_human_double_click(node, args)
+
+        # 人类模拟长按
+        elif command == "human_long_press":
+            return self._execute_human_long_press(node, args)
+
+        # 人类模拟拖拽
+        elif command == "human_drag":
+            return self._execute_human_drag(node, args)
+
         else:
             self.log(f"Unknown command: {command}")
             return None
@@ -724,6 +742,231 @@ class ScriptExecutor:
         """停止脚本执行"""
         if self.context:
             self.context.stop_requested = True
+
+    # ============ 人类模拟操作辅助方法 ============
+
+    def _parse_human_options(self, args: List[Any]) -> Dict[str, Any]:
+        """
+        解析人类模拟操作的参数
+
+        支持的参数格式：
+        - 位置参数：x, y 坐标
+        - 命名参数：offset_min=3, offset_max=10, delay_min=0.05, ...
+
+        Args:
+            args: 参数列表
+
+        Returns:
+            解析后的选项字典
+        """
+        options: Dict[str, Any] = {}
+
+        for arg in args:
+            if isinstance(arg, str) and "=" in arg:
+                # 命名参数
+                key, value = arg.split("=", 1)
+                key = key.strip()
+                value = value.strip()
+                # 尝试转换为数字
+                try:
+                    if "." in value:
+                        options[key] = float(value)
+                    else:
+                        options[key] = int(value)
+                except ValueError:
+                    options[key] = value
+            elif isinstance(arg, (int, float)):
+                # 位置参数（坐标）
+                if "x" not in options:
+                    options["x"] = int(arg)
+                elif "y" not in options:
+                    options["y"] = int(arg)
+
+        return options
+
+    def _execute_human_click(self, node: CommandNode, args: List[Any]) -> bool:
+        """
+        执行人类模拟点击
+
+        语法：
+        - human_click id:"resource_id"
+        - human_click text:"按钮文本"
+        - human_click xpath:"//android.widget.Button"
+        - human_click 500, 800
+        - human_click 500, 800, offset_min=3, offset_max=10
+
+        Args:
+            node: 命令节点
+            args: 参数列表
+
+        Returns:
+            是否成功
+        """
+        options = self._parse_human_options(args)
+
+        # 从选择器获取目标
+        if node.selector_type and node.selector_value:
+            options["selector_type"] = node.selector_type
+            options["selector_value"] = self._resolve_value(node.selector_value)
+
+        # 设置默认值
+        offset_range = (options.get("offset_min", 3), options.get("offset_max", 10))
+        delay_range = (options.get("delay_min", 0.05), options.get("delay_max", 0.3))
+        duration_range = (options.get("duration_min", 0.05), options.get("duration_max", 0.15))
+
+        return self.input_service.human_click(
+            x=options.get("x"),
+            y=options.get("y"),
+            selector_type=options.get("selector_type"),
+            selector_value=options.get("selector_value"),
+            offset_range=offset_range,
+            delay_range=delay_range,
+            duration_range=duration_range,
+        )
+
+    def _execute_human_double_click(self, node: CommandNode, args: List[Any]) -> bool:
+        """
+        执行人类模拟双击
+
+        语法：
+        - human_double_click id:"resource_id"
+        - human_double_click 500, 800
+        - human_double_click 500, 800, interval_min=0.1, interval_max=0.2
+
+        Args:
+            node: 命令节点
+            args: 参数列表
+
+        Returns:
+            是否成功
+        """
+        options = self._parse_human_options(args)
+
+        if node.selector_type and node.selector_value:
+            options["selector_type"] = node.selector_type
+            options["selector_value"] = self._resolve_value(node.selector_value)
+
+        offset_range = (options.get("offset_min", 3), options.get("offset_max", 8))
+        interval_range = (options.get("interval_min", 0.1), options.get("interval_max", 0.2))
+        duration_range = (options.get("duration_min", 0.03), options.get("duration_max", 0.08))
+
+        return self.input_service.human_double_click(
+            x=options.get("x"),
+            y=options.get("y"),
+            selector_type=options.get("selector_type"),
+            selector_value=options.get("selector_value"),
+            offset_range=offset_range,
+            interval_range=interval_range,
+            duration_range=duration_range,
+        )
+
+    def _execute_human_long_press(self, node: CommandNode, args: List[Any]) -> bool:
+        """
+        执行人类模拟长按
+
+        语法：
+        - human_long_press id:"resource_id"
+        - human_long_press 500, 800
+        - human_long_press 500, 800, duration_min=0.8, duration_max=1.5
+
+        Args:
+            node: 命令节点
+            args: 参数列表
+
+        Returns:
+            是否成功
+        """
+        options = self._parse_human_options(args)
+
+        if node.selector_type and node.selector_value:
+            options["selector_type"] = node.selector_type
+            options["selector_value"] = self._resolve_value(node.selector_value)
+
+        duration_range = (options.get("duration_min", 0.8), options.get("duration_max", 1.5))
+        offset_range = (options.get("offset_min", 3), options.get("offset_max", 10))
+        delay_range = (options.get("delay_min", 0.05), options.get("delay_max", 0.2))
+
+        return self.input_service.human_long_press(
+            x=options.get("x"),
+            y=options.get("y"),
+            selector_type=options.get("selector_type"),
+            selector_value=options.get("selector_value"),
+            duration_range=duration_range,
+            offset_range=offset_range,
+            delay_range=delay_range,
+        )
+
+    def _execute_human_drag(self, node: CommandNode, args: List[Any]) -> bool:
+        """
+        执行人类模拟拖拽
+
+        语法：
+        - human_drag 100, 500, 100, 200  # 从 (100,500) 拖到 (100,200)
+        - human_drag id:"start_element", id:"end_element"
+        - human_drag 100, 500, 100, 200, trajectory="bezier", speed="ease_in_out"
+        - human_drag 100, 500, 100, 200, duration=1.5  # 指定拖拽时间
+
+        参数说明：
+        - 前四个数字参数：start_x, start_y, end_x, end_y
+        - trajectory: 轨迹类型 (bezier, linear_jitter)
+        - speed: 速度模式 (ease_in_out, ease_in, ease_out, linear, random)
+        - duration: 拖拽总时间（秒），默认 1.0
+        - num_points: 轨迹采样点数量
+
+        Args:
+            node: 命令节点
+            args: 参数列表
+
+        Returns:
+            是否成功
+        """
+        options = self._parse_human_options(args)
+
+        # 解析坐标参数（前四个数字）
+        coords = [arg for arg in args if isinstance(arg, (int, float))]
+        if len(coords) >= 4:
+            options["start_x"] = int(coords[0])
+            options["start_y"] = int(coords[1])
+            options["end_x"] = int(coords[2])
+            options["end_y"] = int(coords[3])
+
+        # 从选择器获取起点（如果有）
+        if node.selector_type and node.selector_value:
+            options["start_selector_type"] = node.selector_type
+            options["start_selector_value"] = self._resolve_value(node.selector_value)
+
+        # 解析轨迹和速度参数
+        trajectory_type = options.get("trajectory", "bezier")
+        if trajectory_type not in ("bezier", "linear_jitter"):
+            trajectory_type = "bezier"
+
+        speed_mode = options.get("speed", "ease_in_out")
+        if speed_mode not in ("ease_in_out", "ease_in", "ease_out", "linear", "random"):
+            speed_mode = "ease_in_out"
+
+        duration = options.get("duration", 1.0)
+        num_points = options.get("num_points", 50)
+        offset_range = (options.get("offset_min", 3), options.get("offset_max", 10))
+        jitter_range = (options.get("jitter_min", 1), options.get("jitter_max", 5))
+        delay_range = (options.get("delay_min", 0.05), options.get("delay_max", 0.2))
+
+        return self.input_service.human_drag(
+            start_x=options.get("start_x"),
+            start_y=options.get("start_y"),
+            end_x=options.get("end_x"),
+            end_y=options.get("end_y"),
+            start_selector_type=options.get("start_selector_type"),
+            start_selector_value=options.get("start_selector_value"),
+            end_selector_type=options.get("end_selector_type"),
+            end_selector_value=options.get("end_selector_value"),
+            trajectory_type=trajectory_type,  # type: ignore
+            speed_mode=speed_mode,  # type: ignore
+            duration=duration,
+            num_points=num_points,
+            offset_range=offset_range,
+            jitter_range=jitter_range,
+            delay_range=delay_range,
+        )
 
 
 # 导出的公共接口

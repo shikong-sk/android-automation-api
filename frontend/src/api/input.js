@@ -146,5 +146,87 @@ export const inputApi = {
 
   sendAction(resourceId, action = 'IME_ACTION_DONE') {
     return request.post('/input/send-action', null, { params: { resource_id: resourceId, action } })
+  },
+
+  // ============ 人类模拟操作 API ============
+
+  /**
+   * 模拟人类点击
+   * @param {Object} options - 点击选项
+   * @param {number} [options.x] - 目标 x 坐标
+   * @param {number} [options.y] - 目标 y 坐标
+   * @param {string} [options.selector_type] - 选择器类型: id, text, class, xpath
+   * @param {string} [options.selector_value] - 选择器值
+   * @param {number} [options.offset_min=3] - 随机偏移最小值
+   * @param {number} [options.offset_max=10] - 随机偏移最大值
+   * @param {number} [options.delay_min=0.05] - 点击前延迟最小值（秒）
+   * @param {number} [options.delay_max=0.3] - 点击前延迟最大值（秒）
+   * @param {number} [options.duration_min=0.05] - 按压时长最小值（秒）
+   * @param {number} [options.duration_max=0.15] - 按压时长最大值（秒）
+   */
+  humanClick(options) {
+    return request.post('/input/human-click', options)
+  },
+
+  /**
+   * 模拟人类双击
+   * @param {Object} options - 双击选项
+   * @param {number} [options.x] - 目标 x 坐标
+   * @param {number} [options.y] - 目标 y 坐标
+   * @param {string} [options.selector_type] - 选择器类型
+   * @param {string} [options.selector_value] - 选择器值
+   * @param {number} [options.offset_min=3] - 随机偏移最小值
+   * @param {number} [options.offset_max=8] - 随机偏移最大值
+   * @param {number} [options.interval_min=0.1] - 两次点击间隔最小值（秒）
+   * @param {number} [options.interval_max=0.2] - 两次点击间隔最大值（秒）
+   * @param {number} [options.duration_min=0.03] - 按压时长最小值（秒）
+   * @param {number} [options.duration_max=0.08] - 按压时长最大值（秒）
+   */
+  humanDoubleClick(options) {
+    return request.post('/input/human-double-click', options)
+  },
+
+  /**
+   * 模拟人类长按
+   * @param {Object} options - 长按选项
+   * @param {number} [options.x] - 目标 x 坐标
+   * @param {number} [options.y] - 目标 y 坐标
+   * @param {string} [options.selector_type] - 选择器类型
+   * @param {string} [options.selector_value] - 选择器值
+   * @param {number} [options.duration_min=0.8] - 长按时长最小值（秒）
+   * @param {number} [options.duration_max=1.5] - 长按时长最大值（秒）
+   * @param {number} [options.offset_min=3] - 随机偏移最小值
+   * @param {number} [options.offset_max=10] - 随机偏移最大值
+   * @param {number} [options.delay_min=0.05] - 操作前延迟最小值（秒）
+   * @param {number} [options.delay_max=0.2] - 操作前延迟最大值（秒）
+   */
+  humanLongPress(options) {
+    return request.post('/input/human-long-press', options)
+  },
+
+  /**
+   * 模拟人类拖拽
+   * @param {Object} options - 拖拽选项
+   * @param {number} [options.start_x] - 起点 x 坐标
+   * @param {number} [options.start_y] - 起点 y 坐标
+   * @param {number} [options.end_x] - 终点 x 坐标
+   * @param {number} [options.end_y] - 终点 y 坐标
+   * @param {string} [options.start_selector_type] - 起点选择器类型
+   * @param {string} [options.start_selector_value] - 起点选择器值
+   * @param {string} [options.end_selector_type] - 终点选择器类型
+   * @param {string} [options.end_selector_value] - 终点选择器值
+   * @param {string} [options.trajectory_type='bezier'] - 轨迹类型: bezier, linear_jitter
+   * @param {string} [options.speed_mode='ease_in_out'] - 速度模式: ease_in_out, ease_in, ease_out, linear, random
+   * @param {number} [options.duration=1.0] - 拖拽总时间（秒）
+   * @param {number} [options.num_points=50] - 轨迹采样点数量
+   * @param {number} [options.offset_min=3] - 起点/终点随机偏移最小值
+   * @param {number} [options.offset_max=10] - 起点/终点随机偏移最大值
+   * @param {number} [options.jitter_min=1] - 直线轨迹抖动最小值
+   * @param {number} [options.jitter_max=5] - 直线轨迹抖动最大值
+   * @param {number} [options.delay_min=0.05] - 操作前延迟最小值（秒）
+   * @param {number} [options.delay_max=0.2] - 操作前延迟最大值（秒）
+   */
+  humanDrag(options) {
+    return request.post('/input/human-drag', options)
   }
 }

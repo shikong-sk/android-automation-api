@@ -264,6 +264,57 @@ call "other_script.script"
           </div>
         </div>
 
+        <!-- 人类模拟操作 -->
+        <div class="mt-4 bg-purple-50 p-4 rounded border border-purple-200">
+          <h4 class="font-semibold mb-3 text-purple-800">人类模拟操作</h4>
+          <p class="text-xs text-purple-700 mb-3">模拟真实人类的点击和拖拽行为，包含随机偏移、延迟和自然的运动轨迹，可用于反检测场景。</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 class="font-medium mb-2 text-sm">人类点击/双击/长按</h5>
+              <pre class="bg-purple-100 p-2 rounded text-xs"># 通过选择器点击
+human_click id:"button_id"
+human_click text:"确定"
+human_click xpath:"//Button[@text='提交']"
+
+# 通过坐标点击
+human_click 500, 800
+
+# 自定义参数
+human_click 500, 800, offset_min=5, offset_max=15
+
+# 人类双击
+human_double_click id:"item"
+human_double_click 500, 800
+
+# 人类长按
+human_long_press id:"item"
+human_long_press 500, 800, duration_min=1.0</pre>
+            </div>
+            <div>
+              <h5 class="font-medium mb-2 text-sm">人类拖拽</h5>
+              <pre class="bg-purple-100 p-2 rounded text-xs"># 坐标拖拽（贝塞尔曲线轨迹）
+human_drag 100, 1500, 100, 500
+
+# 指定拖拽时间（秒）
+human_drag 100, 1500, 100, 500, duration=1.5
+
+# 指定轨迹类型和速度模式
+human_drag 100, 1500, 100, 500, trajectory="bezier", speed="ease_in_out"
+
+# 直线抖动轨迹
+human_drag 100, 1500, 100, 500, trajectory="linear_jitter"
+
+# 可用参数:
+# duration: 拖拽总时间（秒），默认1.0
+# trajectory: bezier(贝塞尔), linear_jitter(直线抖动)
+# speed: ease_in_out, ease_in, ease_out, linear, random
+# offset_min/max: 随机偏移范围
+# delay_min/max: 操作前延迟
+# num_points: 轨迹采样点数量</pre>
+            </div>
+          </div>
+        </div>
+
         <!-- 完整示例 -->
         <div class="mt-4">
           <h4 class="font-semibold mb-2">完整脚本示例</h4>

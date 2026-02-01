@@ -238,6 +238,241 @@
             </div>
           </div>
         </el-tab-pane>
+
+        <el-tab-pane label="人类模拟" name="human">
+          <div class="space-y-4">
+            <el-alert 
+              title="人类模拟操作" 
+              type="info" 
+              :closable="false"
+              description="模拟真实人类的点击和拖拽行为，包含随机偏移、延迟和自然的运动轨迹。"
+              show-icon
+              class="mb-4"
+            />
+            
+            <!-- 操作类型选择 -->
+            <el-radio-group v-model="humanActionType" class="mb-4">
+              <el-radio-button value="click">点击</el-radio-button>
+              <el-radio-button value="doubleClick">双击</el-radio-button>
+              <el-radio-button value="longPress">长按</el-radio-button>
+              <el-radio-button value="drag">拖拽</el-radio-button>
+            </el-radio-group>
+
+            <!-- 点击/双击/长按 共用的目标定位 -->
+            <div v-if="humanActionType !== 'drag'" class="space-y-4">
+              <div class="text-sm font-medium text-gray-700 mb-2">目标定位方式</div>
+              <el-radio-group v-model="humanTargetMode" class="mb-3">
+                <el-radio value="selector">选择器定位</el-radio>
+                <el-radio value="coordinate">坐标定位</el-radio>
+              </el-radio-group>
+
+              <!-- 选择器定位 -->
+              <div v-if="humanTargetMode === 'selector'" class="flex gap-2">
+                <el-select v-model="humanSelectorType" placeholder="选择器类型" class="w-32">
+                  <el-option label="By ID" value="id" />
+                  <el-option label="By Text" value="text" />
+                  <el-option label="By Class" value="class" />
+                  <el-option label="By XPath" value="xpath" />
+                </el-select>
+                <el-input
+                  v-model="humanSelectorValue"
+                  :placeholder="getPlaceholder(humanSelectorType)"
+                  clearable
+                  class="flex-1"
+                >
+                  <template #append v-if="humanSelectorType === 'xpath'">
+                    <el-button @click="openXPathGenerator('human')">
+                      生成
+                    </el-button>
+                  </template>
+                </el-input>
+              </div>
+
+              <!-- 坐标定位 -->
+              <div v-else class="flex gap-2">
+                <el-input-number v-model="humanTargetX" :min="0" placeholder="X 坐标" controls-position="right" class="w-36" />
+                <el-input-number v-model="humanTargetY" :min="0" placeholder="Y 坐标" controls-position="right" class="w-36" />
+              </div>
+            </div>
+
+            <!-- 拖拽的起点和终点 -->
+            <div v-else class="space-y-4">
+              <!-- 起点 -->
+              <div class="border rounded-lg p-4 bg-gray-50">
+                <div class="text-sm font-medium text-gray-700 mb-3">起点定位</div>
+                <el-radio-group v-model="humanDragStartMode" class="mb-3">
+                  <el-radio value="selector">选择器定位</el-radio>
+                  <el-radio value="coordinate">坐标定位</el-radio>
+                </el-radio-group>
+
+                <div v-if="humanDragStartMode === 'selector'" class="flex gap-2">
+                  <el-select v-model="humanDragStartSelectorType" placeholder="选择器类型" class="w-32">
+                    <el-option label="By ID" value="id" />
+                    <el-option label="By Text" value="text" />
+                    <el-option label="By Class" value="class" />
+                    <el-option label="By XPath" value="xpath" />
+                  </el-select>
+                  <el-input
+                    v-model="humanDragStartSelectorValue"
+                    :placeholder="getPlaceholder(humanDragStartSelectorType)"
+                    clearable
+                    class="flex-1"
+                  >
+                    <template #append v-if="humanDragStartSelectorType === 'xpath'">
+                      <el-button @click="openXPathGenerator('humanDragStart')">
+                        生成
+                      </el-button>
+                    </template>
+                  </el-input>
+                </div>
+                <div v-else class="flex gap-2">
+                  <el-input-number v-model="humanDragStartX" :min="0" placeholder="X 坐标" controls-position="right" class="w-36" />
+                  <el-input-number v-model="humanDragStartY" :min="0" placeholder="Y 坐标" controls-position="right" class="w-36" />
+                </div>
+              </div>
+
+              <!-- 终点 -->
+              <div class="border rounded-lg p-4 bg-gray-50">
+                <div class="text-sm font-medium text-gray-700 mb-3">终点定位</div>
+                <el-radio-group v-model="humanDragEndMode" class="mb-3">
+                  <el-radio value="selector">选择器定位</el-radio>
+                  <el-radio value="coordinate">坐标定位</el-radio>
+                </el-radio-group>
+
+                <div v-if="humanDragEndMode === 'selector'" class="flex gap-2">
+                  <el-select v-model="humanDragEndSelectorType" placeholder="选择器类型" class="w-32">
+                    <el-option label="By ID" value="id" />
+                    <el-option label="By Text" value="text" />
+                    <el-option label="By Class" value="class" />
+                    <el-option label="By XPath" value="xpath" />
+                  </el-select>
+                  <el-input
+                    v-model="humanDragEndSelectorValue"
+                    :placeholder="getPlaceholder(humanDragEndSelectorType)"
+                    clearable
+                    class="flex-1"
+                  >
+                    <template #append v-if="humanDragEndSelectorType === 'xpath'">
+                      <el-button @click="openXPathGenerator('humanDragEnd')">
+                        生成
+                      </el-button>
+                    </template>
+                  </el-input>
+                </div>
+                <div v-else class="flex gap-2">
+                  <el-input-number v-model="humanDragEndX" :min="0" placeholder="X 坐标" controls-position="right" class="w-36" />
+                  <el-input-number v-model="humanDragEndY" :min="0" placeholder="Y 坐标" controls-position="right" class="w-36" />
+                </div>
+              </div>
+
+              <!-- 拖拽轨迹和速度配置 -->
+              <div class="border rounded-lg p-4 bg-blue-50">
+                <div class="text-sm font-medium text-gray-700 mb-3">轨迹和速度配置</div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">轨迹类型</div>
+                    <el-select v-model="humanDragTrajectory" class="w-full">
+                      <el-option label="贝塞尔曲线（推荐）" value="bezier" />
+                      <el-option label="直线 + 抖动" value="linear_jitter" />
+                    </el-select>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">速度模式</div>
+                    <el-select v-model="humanDragSpeedMode" class="w-full">
+                      <el-option label="加速-匀速-减速（推荐）" value="ease_in_out" />
+                      <el-option label="仅加速" value="ease_in" />
+                      <el-option label="仅减速" value="ease_out" />
+                      <el-option label="匀速" value="linear" />
+                      <el-option label="随机" value="random" />
+                    </el-select>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <div class="text-xs text-gray-500 mb-1">拖拽时间: {{ humanDragDuration.toFixed(1) }} 秒</div>
+                  <el-slider v-model="humanDragDuration" :min="0.2" :max="5.0" :step="0.1" />
+                </div>
+                <div class="mt-3">
+                  <div class="text-xs text-gray-500 mb-1">轨迹采样点数量: {{ humanDragNumPoints }}</div>
+                  <el-slider v-model="humanDragNumPoints" :min="10" :max="100" :step="5" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 高级配置（可折叠） -->
+            <el-collapse v-model="humanAdvancedExpanded" class="mt-4">
+              <el-collapse-item title="高级配置" name="advanced">
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- 偏移范围 -->
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">随机偏移范围（像素）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanOffsetMin" :min="0" :max="50" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanOffsetMax" :min="0" :max="50" size="small" class="w-20" />
+                    </div>
+                  </div>
+                  <!-- 延迟范围 -->
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">操作前延迟（秒）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanDelayMin" :min="0" :max="2" :step="0.05" :precision="2" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanDelayMax" :min="0" :max="2" :step="0.05" :precision="2" size="small" class="w-20" />
+                    </div>
+                  </div>
+                  <!-- 按压时长（点击/双击） -->
+                  <div v-if="humanActionType === 'click' || humanActionType === 'doubleClick'">
+                    <div class="text-xs text-gray-500 mb-1">按压时长（秒）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanDurationMin" :min="0.01" :max="1" :step="0.01" :precision="2" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanDurationMax" :min="0.01" :max="1" :step="0.01" :precision="2" size="small" class="w-20" />
+                    </div>
+                  </div>
+                  <!-- 长按时长 -->
+                  <div v-if="humanActionType === 'longPress'">
+                    <div class="text-xs text-gray-500 mb-1">长按时长（秒）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanLongPressDurationMin" :min="0.3" :max="5" :step="0.1" :precision="1" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanLongPressDurationMax" :min="0.3" :max="5" :step="0.1" :precision="1" size="small" class="w-20" />
+                    </div>
+                  </div>
+                  <!-- 双击间隔 -->
+                  <div v-if="humanActionType === 'doubleClick'">
+                    <div class="text-xs text-gray-500 mb-1">双击间隔（秒）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanIntervalMin" :min="0.05" :max="0.5" :step="0.01" :precision="2" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanIntervalMax" :min="0.05" :max="0.5" :step="0.01" :precision="2" size="small" class="w-20" />
+                    </div>
+                  </div>
+                  <!-- 抖动范围（拖拽） -->
+                  <div v-if="humanActionType === 'drag' && humanDragTrajectory === 'linear_jitter'">
+                    <div class="text-xs text-gray-500 mb-1">抖动范围（像素）</div>
+                    <div class="flex gap-2 items-center">
+                      <el-input-number v-model="humanJitterMin" :min="0" :max="20" size="small" class="w-20" />
+                      <span class="text-gray-400">~</span>
+                      <el-input-number v-model="humanJitterMax" :min="0" :max="20" size="small" class="w-20" />
+                    </div>
+                  </div>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
+
+            <!-- 执行按钮 -->
+            <div class="flex gap-2 mt-4">
+              <el-button 
+                type="primary" 
+                :disabled="!isHumanActionValid" 
+                :loading="humanActionLoading"
+                @click="handleHumanAction"
+              >
+                {{ humanActionButtonText }}
+              </el-button>
+            </div>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
 
@@ -327,6 +562,29 @@
       </div>
     </el-card>
 
+    <!-- DSL 脚本预览卡片 -->
+    <el-card shadow="hover" v-if="currentDslScript">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <el-icon><Terminal /></el-icon>
+            <span class="font-semibold">DSL 脚本预览</span>
+          </div>
+          <el-button size="small" @click="copyDslScript">
+            <el-icon class="mr-1"><Copy /></el-icon>
+            复制
+          </el-button>
+        </div>
+      </template>
+      
+      <div class="bg-gray-900 text-green-400 p-3 rounded text-sm font-mono">
+        <pre class="whitespace-pre-wrap">{{ currentDslScript }}</pre>
+      </div>
+      <div class="mt-2 text-xs text-gray-400">
+        提示：此脚本可直接用于自动化脚本编辑器中
+      </div>
+    </el-card>
+
     <!-- XPath 生成器弹窗 -->
     <XPathGenerator
       v-model="showXPathGenerator"
@@ -339,7 +597,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
-import { Pen, Code, Search, ArrowUp, ArrowDown } from '@vicons/fa'
+import { Pen, Code, Search, ArrowUp, ArrowDown, Terminal, Copy } from '@vicons/fa'
 import XPathGenerator from './XPathGenerator.vue'
 
 const activeTab = ref('click')
@@ -371,7 +629,80 @@ const xmlContainerRef = ref(null)
 
 // XPath 生成器相关
 const showXPathGenerator = ref(false)
-const xpathInsertTarget = ref('') // 'click', 'locate', 'text', 'wait', 'info'
+const xpathInsertTarget = ref('') // 'click', 'locate', 'text', 'wait', 'info', 'human'
+
+// ============ 人类模拟操作相关状态 ============
+const humanActionType = ref('click') // 'click', 'doubleClick', 'longPress', 'drag'
+const humanTargetMode = ref('selector') // 'selector', 'coordinate'
+const humanSelectorType = ref('id')
+const humanSelectorValue = ref('')
+const humanTargetX = ref(null)
+const humanTargetY = ref(null)
+
+// 拖拽相关
+const humanDragStartMode = ref('coordinate')
+const humanDragStartSelectorType = ref('id')
+const humanDragStartSelectorValue = ref('')
+const humanDragStartX = ref(null)
+const humanDragStartY = ref(null)
+const humanDragEndMode = ref('coordinate')
+const humanDragEndSelectorType = ref('id')
+const humanDragEndSelectorValue = ref('')
+const humanDragEndX = ref(null)
+const humanDragEndY = ref(null)
+const humanDragTrajectory = ref('bezier')
+const humanDragSpeedMode = ref('ease_in_out')
+const humanDragNumPoints = ref(50)
+const humanDragDuration = ref(1.0)
+
+// 高级配置
+const humanAdvancedExpanded = ref([])
+const humanOffsetMin = ref(3)
+const humanOffsetMax = ref(10)
+const humanDelayMin = ref(0.05)
+const humanDelayMax = ref(0.3)
+const humanDurationMin = ref(0.05)
+const humanDurationMax = ref(0.15)
+const humanLongPressDurationMin = ref(0.8)
+const humanLongPressDurationMax = ref(1.5)
+const humanIntervalMin = ref(0.1)
+const humanIntervalMax = ref(0.2)
+const humanJitterMin = ref(1)
+const humanJitterMax = ref(5)
+const humanActionLoading = ref(false)
+
+// 人类模拟操作按钮文本
+const humanActionButtonText = computed(() => {
+  const texts = {
+    click: '执行人类点击',
+    doubleClick: '执行人类双击',
+    longPress: '执行人类长按',
+    drag: '执行人类拖拽'
+  }
+  return texts[humanActionType.value] || '执行'
+})
+
+// 验证人类模拟操作是否有效
+const isHumanActionValid = computed(() => {
+  if (humanActionType.value === 'drag') {
+    // 拖拽需要验证起点和终点
+    const startValid = humanDragStartMode.value === 'coordinate' 
+      ? (humanDragStartX.value != null && humanDragStartY.value != null && 
+         !isNaN(humanDragStartX.value) && !isNaN(humanDragStartY.value))
+      : !!humanDragStartSelectorValue.value
+    const endValid = humanDragEndMode.value === 'coordinate'
+      ? (humanDragEndX.value != null && humanDragEndY.value != null &&
+         !isNaN(humanDragEndX.value) && !isNaN(humanDragEndY.value))
+      : !!humanDragEndSelectorValue.value
+    return startValid && endValid
+  } else {
+    // 点击/双击/长按需要验证目标
+    return humanTargetMode.value === 'coordinate'
+      ? (humanTargetX.value != null && humanTargetY.value != null &&
+         !isNaN(humanTargetX.value) && !isNaN(humanTargetY.value))
+      : !!humanSelectorValue.value
+  }
+})
 
 function openXPathGenerator(target) {
   xpathInsertTarget.value = target
@@ -399,6 +730,18 @@ function handleXPathInsert(xpath) {
     case 'info':
       infoLocateValue.value = xpath
       infoLocateType.value = 'xpath'
+      break
+    case 'human':
+      humanSelectorValue.value = xpath
+      humanSelectorType.value = 'xpath'
+      break
+    case 'humanDragStart':
+      humanDragStartSelectorValue.value = xpath
+      humanDragStartSelectorType.value = 'xpath'
+      break
+    case 'humanDragEnd':
+      humanDragEndSelectorValue.value = xpath
+      humanDragEndSelectorType.value = 'xpath'
       break
   }
   ElMessage.success('XPath 已插入')
@@ -760,6 +1103,319 @@ function escapeHtml(text) {
 // 辅助函数：转义正则表达式特殊字符
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// ============ 人类模拟操作处理函数 ============
+
+async function handleHumanAction() {
+  humanActionLoading.value = true
+  try {
+    let response
+    const actionType = humanActionType.value
+
+    if (actionType === 'click') {
+      response = await handleHumanClick()
+    } else if (actionType === 'doubleClick') {
+      response = await handleHumanDoubleClick()
+    } else if (actionType === 'longPress') {
+      response = await handleHumanLongPress()
+    } else if (actionType === 'drag') {
+      response = await handleHumanDrag()
+    }
+
+    if (response?.success) {
+      ElMessage.success(response.message || '操作成功')
+    } else {
+      ElMessage.warning(response?.message || '操作失败，目标可能不存在')
+    }
+  } catch (err) {
+    console.error('Human action error:', err)
+    ElMessage.error('操作失败: ' + (err.response?.data?.detail || err.message))
+  } finally {
+    humanActionLoading.value = false
+  }
+}
+
+async function handleHumanClick() {
+  const options = {
+    offset_min: humanOffsetMin.value,
+    offset_max: humanOffsetMax.value,
+    delay_min: humanDelayMin.value,
+    delay_max: humanDelayMax.value,
+    duration_min: humanDurationMin.value,
+    duration_max: humanDurationMax.value
+  }
+
+  if (humanTargetMode.value === 'coordinate') {
+    options.x = humanTargetX.value
+    options.y = humanTargetY.value
+  } else {
+    options.selector_type = humanSelectorType.value
+    options.selector_value = humanSelectorValue.value
+  }
+
+  return await inputApi.humanClick(options)
+}
+
+async function handleHumanDoubleClick() {
+  const options = {
+    offset_min: humanOffsetMin.value,
+    offset_max: humanOffsetMax.value,
+    interval_min: humanIntervalMin.value,
+    interval_max: humanIntervalMax.value,
+    duration_min: humanDurationMin.value,
+    duration_max: humanDurationMax.value
+  }
+
+  if (humanTargetMode.value === 'coordinate') {
+    options.x = humanTargetX.value
+    options.y = humanTargetY.value
+  } else {
+    options.selector_type = humanSelectorType.value
+    options.selector_value = humanSelectorValue.value
+  }
+
+  return await inputApi.humanDoubleClick(options)
+}
+
+async function handleHumanLongPress() {
+  const options = {
+    offset_min: humanOffsetMin.value,
+    offset_max: humanOffsetMax.value,
+    delay_min: humanDelayMin.value,
+    delay_max: humanDelayMax.value,
+    duration_min: humanLongPressDurationMin.value,
+    duration_max: humanLongPressDurationMax.value
+  }
+
+  if (humanTargetMode.value === 'coordinate') {
+    options.x = humanTargetX.value
+    options.y = humanTargetY.value
+  } else {
+    options.selector_type = humanSelectorType.value
+    options.selector_value = humanSelectorValue.value
+  }
+
+  return await inputApi.humanLongPress(options)
+}
+
+async function handleHumanDrag() {
+  const options = {
+    trajectory_type: humanDragTrajectory.value,
+    speed_mode: humanDragSpeedMode.value,
+    duration: humanDragDuration.value,
+    num_points: humanDragNumPoints.value,
+    offset_min: humanOffsetMin.value,
+    offset_max: humanOffsetMax.value,
+    delay_min: humanDelayMin.value,
+    delay_max: humanDelayMax.value,
+    jitter_min: humanJitterMin.value,
+    jitter_max: humanJitterMax.value
+  }
+
+  // 起点
+  if (humanDragStartMode.value === 'coordinate') {
+    if (humanDragStartX.value != null && humanDragStartY.value != null) {
+      options.start_x = Number(humanDragStartX.value)
+      options.start_y = Number(humanDragStartY.value)
+    }
+  } else {
+    options.start_selector_type = humanDragStartSelectorType.value
+    options.start_selector_value = humanDragStartSelectorValue.value
+  }
+
+  // 终点
+  if (humanDragEndMode.value === 'coordinate') {
+    if (humanDragEndX.value != null && humanDragEndY.value != null) {
+      options.end_x = Number(humanDragEndX.value)
+      options.end_y = Number(humanDragEndY.value)
+    }
+  } else {
+    options.end_selector_type = humanDragEndSelectorType.value
+    options.end_selector_value = humanDragEndSelectorValue.value
+  }
+
+  return await inputApi.humanDrag(options)
+}
+
+// ============ DSL 脚本生成 ============
+
+// 格式化字符串值（添加引号）
+function formatStringValue(value) {
+  if (value === null || value === undefined || value === '') return null
+  // 如果包含双引号，使用单引号包裹
+  if (value.includes('"')) {
+    return `'${value}'`
+  }
+  return `"${value}"`
+}
+
+// 生成选择器 DSL 片段
+function generateSelectorDsl(selectorType, selectorValue) {
+  if (!selectorValue) return null
+  const typeMap = {
+    'id': 'id',
+    'text': 'text',
+    'class': 'class',
+    'xpath': 'xpath'
+  }
+  const dslType = typeMap[selectorType] || 'id'
+  return `${dslType}:${formatStringValue(selectorValue)}`
+}
+
+// 点击元素 DSL
+const clickDsl = computed(() => {
+  if (!clickLocateValue.value) return ''
+  const selector = generateSelectorDsl(clickLocateType.value, clickLocateValue.value)
+  if (!selector) return ''
+  return `click ${selector}`
+})
+
+// 输入文本 DSL
+const textDsl = computed(() => {
+  if (!textLocateValue.value) return ''
+  const selector = generateSelectorDsl(textLocateType.value, textLocateValue.value)
+  if (!selector) return ''
+  
+  const lines = []
+  if (textInput.value) {
+    lines.push(`input ${selector} ${formatStringValue(textInput.value)}`)
+  } else {
+    lines.push(`# 输入文本到元素`)
+    lines.push(`input ${selector} "要输入的文本"`)
+  }
+  return lines.join('\n')
+})
+
+// 滑动屏幕 DSL
+const swipeDsl = computed(() => {
+  return `swipe ${swipeDirection.value} ${swipePercent.value}`
+})
+
+// 元素定位 DSL（查找元素通常用于条件判断）
+const locateDsl = computed(() => {
+  if (!locateValue.value) return ''
+  const selector = generateSelectorDsl(locateType.value, locateValue.value)
+  if (!selector) return ''
+  return `# 检查元素是否存在\nif exists ${selector}\n    # 元素存在时的操作\nend`
+})
+
+// 等待元素 DSL
+const waitDsl = computed(() => {
+  if (!waitLocateValue.value) return ''
+  const selector = generateSelectorDsl(waitLocateType.value, waitLocateValue.value)
+  if (!selector) return ''
+  return `wait_element ${selector} ${waitTimeout.value}`
+})
+
+// 元素信息 DSL
+const infoDsl = computed(() => {
+  if (!infoLocateValue.value) return ''
+  const selector = generateSelectorDsl(infoLocateType.value, infoLocateValue.value)
+  if (!selector) return ''
+  return `# 获取元素文本\nset $text = get_text ${selector}`
+})
+
+// 屏幕控制 DSL
+const screenDsl = computed(() => {
+  return `# 屏幕控制命令\nscreen_on    # 亮屏\nscreen_off   # 锁屏\nunlock       # 解锁`
+})
+
+// 人类模拟操作 DSL
+const humanDsl = computed(() => {
+  const actionType = humanActionType.value
+  
+  if (actionType === 'drag') {
+    // 拖拽操作
+    const parts = ['human_drag']
+    
+    // 起点
+    if (humanDragStartMode.value === 'coordinate') {
+      if (humanDragStartX.value != null && humanDragStartY.value != null) {
+        parts.push(`${humanDragStartX.value},${humanDragStartY.value}`)
+      } else {
+        return ''
+      }
+    } else if (humanDragStartSelectorValue.value) {
+      const selector = generateSelectorDsl(humanDragStartSelectorType.value, humanDragStartSelectorValue.value)
+      parts.push(selector)
+    } else {
+      return ''
+    }
+    
+    // 终点
+    if (humanDragEndMode.value === 'coordinate') {
+      if (humanDragEndX.value != null && humanDragEndY.value != null) {
+        parts.push(`${humanDragEndX.value},${humanDragEndY.value}`)
+      } else {
+        return ''
+      }
+    } else if (humanDragEndSelectorValue.value) {
+      const selector = generateSelectorDsl(humanDragEndSelectorType.value, humanDragEndSelectorValue.value)
+      parts.push(selector)
+    } else {
+      return ''
+    }
+    
+    // 可选参数
+    const options = []
+    if (humanDragTrajectory.value !== 'bezier') {
+      options.push(`trajectory=${humanDragTrajectory.value}`)
+    }
+    if (humanDragSpeedMode.value !== 'ease_in_out') {
+      options.push(`speed=${humanDragSpeedMode.value}`)
+    }
+    if (humanDragDuration.value !== 1.0) {
+      options.push(`duration=${humanDragDuration.value}`)
+    }
+    
+    if (options.length > 0) {
+      parts.push(options.join(' '))
+    }
+    
+    return parts.join(' ')
+  } else {
+    // 点击/双击/长按
+    const commandMap = {
+      'click': 'human_click',
+      'doubleClick': 'human_double_click',
+      'longPress': 'human_long_press'
+    }
+    const command = commandMap[actionType]
+    
+    if (humanTargetMode.value === 'coordinate') {
+      if (humanTargetX.value != null && humanTargetY.value != null) {
+        return `${command} ${humanTargetX.value},${humanTargetY.value}`
+      }
+      return ''
+    } else if (humanSelectorValue.value) {
+      const selector = generateSelectorDsl(humanSelectorType.value, humanSelectorValue.value)
+      return `${command} ${selector}`
+    }
+    return ''
+  }
+})
+
+// 当前选项卡对应的 DSL 脚本
+const currentDslScript = computed(() => {
+  const dslMap = {
+    'click': clickDsl.value,
+    'text': textDsl.value,
+    'swipe': swipeDsl.value,
+    'locate': locateDsl.value,
+    'wait': waitDsl.value,
+    'info': infoDsl.value,
+    'screen': screenDsl.value,
+    'human': humanDsl.value
+  }
+  return dslMap[activeTab.value] || ''
+})
+
+// 复制 DSL 脚本
+function copyDslScript() {
+  if (!currentDslScript.value) return
+  navigator.clipboard.writeText(currentDslScript.value)
+  ElMessage.success('DSL 脚本已复制到剪贴板')
 }
 </script>
 

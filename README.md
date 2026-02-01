@@ -254,6 +254,17 @@ docker run -d \
 | GET | `/api/v1/input/text-by-selector` | 通过选择器获取元素文本 |
 | GET | `/api/v1/input/bounds-by-selector` | 通过选择器获取元素边界 |
 
+### 输入操作 - 人类模拟
+
+模拟真实人类的点击和拖拽行为，包含随机偏移、延迟和自然的运动轨迹：
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/v1/input/human-click` | 模拟人类点击（随机偏移、延迟、按压时长） |
+| POST | `/api/v1/input/human-double-click` | 模拟人类双击 |
+| POST | `/api/v1/input/human-long-press` | 模拟人类长按 |
+| POST | `/api/v1/input/human-drag` | 模拟人类拖拽（贝塞尔曲线/直线抖动轨迹） |
+
 ### 导航控制
 
 | 方法 | 路径 | 描述 |
@@ -405,6 +416,82 @@ curl -X POST "http://localhost:8000/api/v1/input/screen-off"
 
 # 解锁
 curl -X POST "http://localhost:8000/api/v1/input/unlock"
+```
+
+### 人类模拟操作
+
+```bash
+# 人类模拟点击 - 通过坐标
+curl -X POST "http://localhost:8000/api/v1/input/human-click" \
+  -H "Content-Type: application/json" \
+  -d '{"x": 500, "y": 800}'
+
+# 人类模拟点击 - 通过选择器
+curl -X POST "http://localhost:8000/api/v1/input/human-click" \
+  -H "Content-Type: application/json" \
+  -d '{"selector_type": "id", "selector_value": "com.example:id/button"}'
+
+# 人类模拟点击 - 自定义参数
+curl -X POST "http://localhost:8000/api/v1/input/human-click" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "x": 500, "y": 800,
+    "offset_min": 5, "offset_max": 15,
+    "delay_min": 0.1, "delay_max": 0.5,
+    "duration_min": 0.05, "duration_max": 0.2
+  }'
+
+# 人类模拟双击
+curl -X POST "http://localhost:8000/api/v1/input/human-double-click" \
+  -H "Content-Type: application/json" \
+  -d '{"selector_type": "text", "selector_value": "确定"}'
+
+# 人类模拟长按
+curl -X POST "http://localhost:8000/api/v1/input/human-long-press" \
+  -H "Content-Type: application/json" \
+  -d '{"x": 500, "y": 800, "duration_min": 1.0, "duration_max": 2.0}'
+
+# 人类模拟拖拽 - 贝塞尔曲线轨迹
+curl -X POST "http://localhost:8000/api/v1/input/human-drag" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_x": 500, "start_y": 1500,
+    "end_x": 500, "end_y": 500,
+    "trajectory_type": "bezier",
+    "speed_mode": "ease_in_out",
+    "duration": 1.0
+  }'
+
+# 人类模拟拖拽 - 指定拖拽时间
+curl -X POST "http://localhost:8000/api/v1/input/human-drag" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_x": 500, "start_y": 1500,
+    "end_x": 500, "end_y": 500,
+    "duration": 2.0
+  }'
+
+# 人类模拟拖拽 - 直线抖动轨迹
+curl -X POST "http://localhost:8000/api/v1/input/human-drag" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_x": 100, "start_y": 1500,
+    "end_x": 100, "end_y": 500,
+    "trajectory_type": "linear_jitter",
+    "speed_mode": "random",
+    "duration": 1.5,
+    "num_points": 80
+  }'
+
+# 人类模拟拖拽 - 元素到元素
+curl -X POST "http://localhost:8000/api/v1/input/human-drag" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_selector_type": "id",
+    "start_selector_value": "com.example:id/item",
+    "end_selector_type": "id",
+    "end_selector_value": "com.example:id/target"
+  }'
 ```
 
 ### ADB 命令
@@ -611,6 +698,57 @@ screen_on                        # 亮屏
 screen_off                       # 锁屏
 unlock                           # 解锁
 ```
+
+#### 人类模拟操作
+
+模拟真实人类的点击和拖拽行为，包含随机偏移、延迟和自然的运动轨迹：
+
+```bash
+# 人类模拟点击 - 通过选择器
+human_click id:"button_id"
+human_click text:"确定"
+human_click xpath:"//Button[@text='提交']"
+
+# 人类模拟点击 - 通过坐标
+human_click 500, 800
+
+# 人类模拟点击 - 自定义参数
+human_click 500, 800, offset_min=5, offset_max=15, delay_min=0.1
+
+# 人类模拟双击
+human_double_click id:"item"
+human_double_click 500, 800, interval_min=0.1, interval_max=0.2
+
+# 人类模拟长按
+human_long_press id:"item"
+human_long_press 500, 800, duration_min=1.0, duration_max=2.0
+
+# 人类模拟拖拽 - 坐标到坐标
+human_drag 100, 1500, 100, 500
+
+# 人类模拟拖拽 - 指定拖拽时间（秒）
+human_drag 100, 1500, 100, 500, duration=1.5
+
+# 人类模拟拖拽 - 贝塞尔曲线轨迹（推荐）
+human_drag 100, 1500, 100, 500, trajectory="bezier", speed="ease_in_out"
+
+# 人类模拟拖拽 - 直线抖动轨迹
+human_drag 100, 1500, 100, 500, trajectory="linear_jitter", speed="random"
+```
+
+**人类模拟参数说明：**
+
+| 参数 | 默认值 | 描述 |
+|------|--------|------|
+| `offset_min/max` | 3/10 | 随机偏移范围（像素） |
+| `delay_min/max` | 0.05/0.3 | 操作前延迟范围（秒） |
+| `duration_min/max` | 0.05/0.15 | 按压时长范围（秒） |
+| `interval_min/max` | 0.1/0.2 | 双击间隔范围（秒） |
+| `duration` | 1.0 | 拖拽总时间（秒） |
+| `trajectory` | bezier | 拖拽轨迹类型：bezier, linear_jitter |
+| `speed` | ease_in_out | 速度模式：ease_in_out, ease_in, ease_out, linear, random |
+| `num_points` | 50 | 轨迹采样点数量 |
+| `jitter_min/max` | 1/5 | 直线轨迹抖动范围（像素） |
 
 #### 变量
 

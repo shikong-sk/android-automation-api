@@ -2,13 +2,21 @@
 输入操作 API 路由模块
 
 提供点击、输入文本、滑动等用户界面交互操作的 REST API 接口。
-包括元素定位和查找功能。
+包括元素定位和查找功能，以及人类模拟操作。
 """
 
 from fastapi import APIRouter, Depends, Query
 from app.dependencies.services import get_input_service
 from app.services import InputService
-from app.schemas import ActionRequest, ActionResponse
+from app.schemas import (
+    ActionRequest,
+    ActionResponse,
+    HumanClickRequest,
+    HumanDoubleClickRequest,
+    HumanLongPressRequest,
+    HumanDragRequest,
+)
+from typing import Literal
 
 router = APIRouter(prefix="/input", tags=["Input"])
 
@@ -664,3 +672,207 @@ def get_element_bounds_by_selector(
     """
     result = input_service.get_element_bounds_by_selector(selector_type, selector_value)
     return {"selector_type": selector_type, "selector_value": selector_value, "result": result}
+
+
+# ============ 人类模拟操作 API ============
+
+
+@router.post("/human-click", response_model=ActionResponse)
+def human_click(
+    request: HumanClickRequest,
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    模拟人类点击操作
+
+    支持通过坐标或选择器定位目标位置，添加随机偏移、延迟和按压时长变化，
+    使点击行为更接近真实人类操作。
+
+    特性：
+    - 随机点击偏移：在目标位置周围添加随机偏移
+    - 随机点击延迟：点击前添加随机延迟
+    - 按压时长变化：模拟不同的按压时长
+
+    Args:
+        request: 包含目标位置和随机化参数的请求体
+
+    Returns:
+        ActionResponse: 操作结果响应
+    """
+    result = input_service.human_click(
+        x=request.x,
+        y=request.y,
+        selector_type=request.selector_type,
+        selector_value=request.selector_value,
+        offset_range=(request.offset_min, request.offset_max),
+        delay_range=(request.delay_min, request.delay_max),
+        duration_range=(request.duration_min, request.duration_max),
+    )
+    return ActionResponse(
+        success=result,
+        result={
+            "action": "human_click",
+            "target": {
+                "x": request.x,
+                "y": request.y,
+                "selector_type": request.selector_type,
+                "selector_value": request.selector_value,
+            },
+        },
+        message="点击成功" if result else "点击失败，目标元素可能不存在",
+    )
+
+
+@router.post("/human-double-click", response_model=ActionResponse)
+def human_double_click(
+    request: HumanDoubleClickRequest,
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    模拟人类双击操作
+
+    执行两次快速点击，两次点击之间有随机间隔，
+    每次点击位置略有不同，模拟真实人类双击行为。
+
+    Args:
+        request: 包含目标位置和随机化参数的请求体
+
+    Returns:
+        ActionResponse: 操作结果响应
+    """
+    result = input_service.human_double_click(
+        x=request.x,
+        y=request.y,
+        selector_type=request.selector_type,
+        selector_value=request.selector_value,
+        offset_range=(request.offset_min, request.offset_max),
+        interval_range=(request.interval_min, request.interval_max),
+        duration_range=(request.duration_min, request.duration_max),
+    )
+    return ActionResponse(
+        success=result,
+        result={
+            "action": "human_double_click",
+            "target": {
+                "x": request.x,
+                "y": request.y,
+                "selector_type": request.selector_type,
+                "selector_value": request.selector_value,
+            },
+        },
+        message="双击成功" if result else "双击失败，目标元素可能不存在",
+    )
+
+
+@router.post("/human-long-press", response_model=ActionResponse)
+def human_long_press(
+    request: HumanLongPressRequest,
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    模拟人类长按操作
+
+    执行带有随机时长的长按操作，模拟真实人类长按行为。
+
+    Args:
+        request: 包含目标位置和随机化参数的请求体
+
+    Returns:
+        ActionResponse: 操作结果响应
+    """
+    result = input_service.human_long_press(
+        x=request.x,
+        y=request.y,
+        selector_type=request.selector_type,
+        selector_value=request.selector_value,
+        duration_range=(request.duration_min, request.duration_max),
+        offset_range=(request.offset_min, request.offset_max),
+        delay_range=(request.delay_min, request.delay_max),
+    )
+    return ActionResponse(
+        success=result,
+        result={
+            "action": "human_long_press",
+            "target": {
+                "x": request.x,
+                "y": request.y,
+                "selector_type": request.selector_type,
+                "selector_value": request.selector_value,
+            },
+        },
+        message="长按成功" if result else "长按失败，目标元素可能不存在",
+    )
+
+
+@router.post("/human-drag", response_model=ActionResponse)
+def human_drag(
+    request: HumanDragRequest,
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    模拟人类拖拽操作
+
+    支持贝塞尔曲线轨迹或带抖动的直线轨迹，以及加速-匀速-减速的速度变化，
+    使拖拽行为更接近真实人类操作。
+
+    轨迹类型：
+    - bezier: 贝塞尔曲线轨迹，生成平滑的曲线路径，最接近人类手指移动
+    - linear_jitter: 直线轨迹 + 随机抖动，模拟手抖效果
+
+    速度模式：
+    - ease_in_out: 加速-匀速-减速（推荐），模拟人类拖拽的自然速度变化
+    - ease_in: 仅加速，开始慢逐渐加速
+    - ease_out: 仅减速，开始快逐渐减速
+    - linear: 匀速移动
+    - random: 随机速度变化
+
+    起点/终点支持：
+    - 坐标到坐标
+    - 坐标到元素
+    - 元素到坐标
+    - 元素到元素
+
+    Args:
+        request: 包含起点、终点、轨迹类型和速度模式的请求体
+
+    Returns:
+        ActionResponse: 操作结果响应
+    """
+    result = input_service.human_drag(
+        start_x=request.start_x,
+        start_y=request.start_y,
+        end_x=request.end_x,
+        end_y=request.end_y,
+        start_selector_type=request.start_selector_type,
+        start_selector_value=request.start_selector_value,
+        end_selector_type=request.end_selector_type,
+        end_selector_value=request.end_selector_value,
+        trajectory_type=request.trajectory_type,
+        speed_mode=request.speed_mode,
+        duration=request.duration,
+        num_points=request.num_points,
+        offset_range=(request.offset_min, request.offset_max),
+        jitter_range=(request.jitter_min, request.jitter_max),
+        delay_range=(request.delay_min, request.delay_max),
+    )
+    return ActionResponse(
+        success=result,
+        result={
+            "action": "human_drag",
+            "start": {
+                "x": request.start_x,
+                "y": request.start_y,
+                "selector_type": request.start_selector_type,
+                "selector_value": request.start_selector_value,
+            },
+            "end": {
+                "x": request.end_x,
+                "y": request.end_y,
+                "selector_type": request.end_selector_type,
+                "selector_value": request.end_selector_value,
+            },
+            "trajectory_type": request.trajectory_type,
+            "speed_mode": request.speed_mode,
+        },
+        message="拖拽成功" if result else "拖拽失败，起点或终点元素可能不存在",
+    )

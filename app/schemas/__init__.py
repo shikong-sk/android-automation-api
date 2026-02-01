@@ -7,15 +7,27 @@
 包含以下模型：
 - 设备相关：DeviceConnectRequest, DeviceInfoResponse, DeviceStatusResponse
 - 操作相关：ActionRequest, ActionResponse
+- 人类模拟：HumanClickRequest, HumanDoubleClickRequest, HumanLongPressRequest, HumanDragRequest
 """
 
 from .device import DeviceConnectRequest, DeviceInfoResponse, DeviceStatusResponse
-from .action import ActionRequest, ActionResponse
+from .action import (
+    ActionRequest,
+    ActionResponse,
+    HumanClickRequest,
+    HumanDoubleClickRequest,
+    HumanLongPressRequest,
+    HumanDragRequest,
+)
 
 __all__ = [
     "DeviceConnectRequest",
     "DeviceInfoResponse",
     "DeviceStatusResponse",
     "ActionRequest",
-    "ActionResponse"
+    "ActionResponse",
+    "HumanClickRequest",
+    "HumanDoubleClickRequest",
+    "HumanLongPressRequest",
+    "HumanDragRequest",
 ]
