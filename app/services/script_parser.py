@@ -34,6 +34,10 @@ class TokenType(Enum):
     UNLOCK = auto()
     SET = auto()
     GET_TEXT = auto()
+    GET_INFO = auto()
+    FIND_ELEMENT = auto()
+    FIND_ELEMENTS = auto()
+    DUMP_HIERARCHY = auto()
     EXISTS = auto()
     LOG = auto()
     SHELL = auto()
@@ -218,6 +222,10 @@ class ScriptLexer:
         "unlock": TokenType.UNLOCK,
         "set": TokenType.SET,
         "get_text": TokenType.GET_TEXT,
+        "get_info": TokenType.GET_INFO,
+        "find_element": TokenType.FIND_ELEMENT,
+        "find_elements": TokenType.FIND_ELEMENTS,
+        "dump_hierarchy": TokenType.DUMP_HIERARCHY,
         "exists": TokenType.EXISTS,
         "not": TokenType.NOT,
         "if": TokenType.IF,
@@ -475,6 +483,10 @@ class ScriptParser:
         TokenType.SCREEN_OFF,
         TokenType.UNLOCK,
         TokenType.GET_TEXT,
+        TokenType.GET_INFO,
+        TokenType.FIND_ELEMENT,
+        TokenType.FIND_ELEMENTS,
+        TokenType.DUMP_HIERARCHY,
         TokenType.EXISTS,
         TokenType.LOG,
         TokenType.SHELL,

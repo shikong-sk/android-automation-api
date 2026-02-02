@@ -1,0 +1,121 @@
+# 元素信息获取示例脚本
+# =========================
+# 演示如何使用DSL获取元素信息和属性
+
+log "=== 元素信息获取示例脚本 ==="
+
+# 启动设置应用
+log "启动设置应用"
+start_app "com.android.settings"
+wait 2
+
+# 1. 获取页面标题文本
+log "1. 获取页面标题文本"
+set $title = get_text id:"android:id/title"
+log "   当前页面标题: $title"
+
+# 2. 检查标题是否存在
+if exists id:"android:id/title"
+    log "   ✓ 标题元素存在"
+else
+    log "   ✗ 标题元素不存在"
+end
+
+# 3. 获取搜索按钮的完整信息
+log "2. 获取搜索按钮的完整信息"
+set $search_btn = get_info id:"com.android.settings:id/search"
+
+if $search_btn.exists
+    log "   搜索按钮信息:"
+    log "   - 文本: $search_btn.text"
+    log "   - 类名: $search_btn.class_name"
+    log "   - 资源ID: $search_btn.resource_id"
+    log "   - 是否可用: $search_btn.enabled"
+    log "   - 是否可点击: $search_btn.clickable"
+    log "   - 边界: $search_btn.bounds"
+else
+    log "   - 搜索按钮不存在"
+end
+
+# 4. 查找所有 TextView 元素
+log "3. 查找所有 TextView 元素"
+set $textviews = find_elements class:"android.widget.TextView"
+log "   找到 $textviews.count 个 TextView 元素"
+
+# 5. 查找特定文本元素
+log "4. 查找包含'网络'的文本元素"
+if exists text:"网络" or exists text:"WLAN" or exists text:"Wi-Fi"
+    log "   ✓ 找到网络选项"
+    
+    # 获取按钮信息
+    set $network_btn = find_element text:"网络"
+    if $network_btn.exists
+        log "   - 按钮文本: $network_btn.text"
+        log "   - 边界位置: $network_btn.bounds"
+    end
+else
+    log "   ✗ 未找到网络选项"
+end
+
+# 6. 通过 XPath 查找元素
+log "5. 通过 XPath 查找列表项"
+set $list_item = find_element xpath:"//android.widget.TextView"
+if $list_item.exists
+    log "   ✓ 找到列表项: $list_item.text"
+else
+    log "   - 未找到列表项"
+end
+
+# 7. 获取多个按钮的状态
+log "6. 检查多个按钮状态"
+set $buttons = ["确定", "取消", "关闭"]
+
+loop 3
+    # 使用索引检查按钮
+    wait 0.1
+    if exists text:"确定"
+        log "   - '确定'按钮存在"
+        set $ok = get_info text:"确定"
+        log "     是否可用: $ok.enabled"
+        break
+    end
+end
+
+# 8. 导出当前界面结构（用于调试）
+log "7. 导出当前界面结构"
+set $xml = dump_hierarchy
+log "   界面 XML 长度: ${xml.length} 字符"
+log "   前200字符: ${xml.substring(0,200)}"
+
+# 9. 条件判断示例：根据元素状态执行不同操作
+log "8. 条件判断示例"
+if exists id:"com.android.settings:id/search"
+    set $search_info = get_info id:"com.android.settings:id/search"
+    
+    if $search_info.enabled and $search_info.clickable
+        log "   搜索按钮可用且可点击"
+        # 可以在这里点击搜索按钮
+        # click id:"com.android.settings:id/search"
+    else
+        log "   搜索按钮不可用或不可点击"
+    end
+else
+    log "   搜索按钮不存在"
+end
+
+# 10. 滑动并重复获取信息
+log "9. 滑动页面并重新获取信息"
+loop 2
+    swipe up 0.5
+    wait 1
+    
+    set $new_title = get_text id:"android:id/title"
+    log "   滑动后页面标题: $new_title"
+end
+
+# 返回主页
+log "10. 返回主页"
+home
+wait 1
+
+log "=== 脚本执行完成 ==="

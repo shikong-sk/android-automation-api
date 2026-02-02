@@ -255,6 +255,9 @@ class ScriptExecutor:
 
         selector_value = self._resolve_value(selector_value)
 
+        if selector_value is None:
+            return None
+
         if selector_type == "id":
             return self.device(resourceId=selector_value)
         elif selector_type == "text":
@@ -425,6 +428,51 @@ class ScriptExecutor:
                     info = element.info
                     return info.get("text", "")
             return ""
+
+        # 获取元素信息
+        elif command == "get_info":
+            if node.selector_type and node.selector_value:
+                element = self._get_element(node.selector_type, node.selector_value)
+                if element and element.exists:
+                    info = element.info
+                    result = {
+                        "exists": True,
+                        "text": info.get("text", ""),
+                        "class_name": info.get("className", ""),
+                        "resource_id": info.get("resourceName", ""),
+                        "bounds": info.get("bounds", {}),
+                        "enabled": info.get("enabled", False),
+                        "focused": info.get("focused", False),
+                        "selected": info.get("selected", False),
+                        "clickable": info.get("clickable", False),
+                        "checkable": info.get("checkable", False),
+                        "checked": info.get("checked", False),
+                    }
+                    return result
+                return {"exists": False}
+            return {"exists": False}
+
+        # 查找元素
+        elif command == "find_element":
+            if node.selector_type and node.selector_value:
+                result = self._find_element_by_selector(node.selector_type, node.selector_value)
+                self.log(f"Found element: {result}")
+                return result
+            return {"exists": False}
+
+        # 查找所有元素
+        elif command == "find_elements":
+            if node.selector_type and node.selector_value:
+                results = self._find_elements_by_selector(node.selector_type, node.selector_value)
+                self.log(f"Found {len(results)} elements")
+                return {"elements": results, "count": len(results)}
+            return {"elements": [], "count": 0}
+
+        # 导出界面结构
+        elif command == "dump_hierarchy":
+            xml = self.input_service.get_current_ui_xml()
+            self.log(f"Hierarchy dump: {len(xml)} chars")
+            return xml
 
         # 检查元素存在
         elif command == "exists":
@@ -695,7 +743,7 @@ class ScriptExecutor:
         if command == "exists":
             element = self._get_element(cond.selector_type, cond.selector_value)
             if element:
-                result = element.exists
+                result = bool(element.exists)
         elif command == "get_text":
             element = self._get_element(cond.selector_type, cond.selector_value)
             if element and element.exists:
@@ -742,6 +790,93 @@ class ScriptExecutor:
         """停止脚本执行"""
         if self.context:
             self.context.stop_requested = True
+
+    # ============ 元素信息获取辅助方法 ============
+
+    def _find_element_by_selector(self, selector_type: str, selector_value: str) -> Dict[str, Any]:
+        """
+        根据选择器查找元素并返回详细信息
+
+        Args:
+            selector_type: 选择器类型 (id, text, class, xpath)
+            selector_value: 选择器值
+
+        Returns:
+            Dict: 元素信息字典
+        """
+        selector_value = self._resolve_value(selector_value)
+        element = self._get_element(selector_type, selector_value)
+
+        if element and element.exists:
+            info = element.info
+            return {
+                "exists": True,
+                "text": info.get("text", ""),
+                "class_name": info.get("className", ""),
+                "resource_id": info.get("resourceName", ""),
+                "bounds": info.get("bounds", {}),
+                "enabled": info.get("enabled", False),
+                "focused": info.get("focused", False),
+                "selected": info.get("selected", False),
+                "clickable": info.get("clickable", False),
+            }
+        return {"exists": False}
+
+    def _find_elements_by_selector(self, selector_type: str, selector_value: str) -> List[Dict[str, Any]]:
+        """
+        根据选择器查找所有匹配元素
+
+        Args:
+            selector_type: 选择器类型 (id, text, class, xpath)
+            selector_value: 选择器值
+
+        Returns:
+            List[Dict]: 元素信息列表
+        """
+        selector_value = self._resolve_value(selector_value)
+        elements = []
+
+        if selector_type == "id":
+            all_elements = self.device(resourceId=selector_value)
+        elif selector_type == "text":
+            all_elements = self.device(text=selector_value)
+        elif selector_type == "class":
+            all_elements = self.device(className=selector_value)
+        elif selector_type == "xpath":
+            # xpath 返回XML元素列表，特殊处理
+            try:
+                xml_elements = self.device.xpath(selector_value).all()
+                for xml_elem in xml_elements:
+                    attrs = xml_elem.attrib
+                    elements.append(
+                        {
+                            "text": attrs.get("text", ""),
+                            "class_name": attrs.get("class", ""),
+                            "resource_id": attrs.get("resource-id", ""),
+                            "bounds": attrs.get("bounds", ""),
+                            "enabled": attrs.get("enabled", "false") == "true",
+                        }
+                    )
+                return elements
+            except Exception:
+                return []
+        else:
+            all_elements = []
+
+        for element in all_elements:
+            if hasattr(element, 'exists') and element.exists:
+                info = element.info
+                elements.append(
+                    {
+                        "text": info.get("text", ""),
+                        "class_name": info.get("className", ""),
+                        "resource_id": info.get("resourceName", ""),
+                        "bounds": info.get("bounds", {}),
+                        "enabled": info.get("enabled", False),
+                    }
+                )
+
+        return elements
 
     # ============ 人类模拟操作辅助方法 ============
 

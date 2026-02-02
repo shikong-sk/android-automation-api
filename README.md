@@ -755,11 +755,38 @@ human_drag 100, 1500, 100, 500, trajectory="linear_jitter", speed="random"
 ```bash
 set $name = "value"              # 设置变量
 set $text = get_text id:"id"     # 获取元素文本
+set $info = get_info id:"id"     # 获取元素完整信息
 set $exists = exists id:"id"     # 检查元素是否存在
 
 # 使用变量
 click text:$name
 input id:"input" $text
+```
+
+#### 元素信息获取
+
+```bash
+# 获取元素文本内容
+get_text id:"button_id"
+get_text text:"确定"
+get_text xpath:"//Button[@text='提交']"
+
+# 获取元素完整信息（包括text、class、bounds等）
+get_info id:"element_id"
+get_info class:"android.widget.Button"
+
+# 查找元素（返回元素信息）
+find_element id:"com.example:id/button"
+find_element text:"确定"
+find_element class:"android.widget.Button"
+find_element xpath:"//Button[@text='提交']"
+
+# 查找所有匹配元素
+find_elements class:"android.widget.TextView"
+find_elements id:"item"
+
+# 导出当前界面XML层次结构
+dump_hierarchy
 ```
 
 #### 条件判断
@@ -832,6 +859,8 @@ shell "ls /sdcard"               # 执行 shell 命令
 
 ### 脚本示例
 
+**基础示例 - 自动打开设置并滑动：**
+
 ```bash
 # 自动打开设置并滑动
 start_app "com.android.settings"
@@ -859,6 +888,29 @@ home
 log "完成"
 ```
 
+**元素信息获取示例：**
+
+```bash
+# 获取元素信息
+start_app "com.android.settings"
+
+# 获取标题文本并记录
+set $title = get_text id:"android:id/title"
+log "当前页面标题: $title"
+
+# 获取按钮完整信息
+set $btn_info = get_info id:"com.android.settings:id/search"
+log $btn_info
+
+# 查找所有 TextView 元素
+set $textviews = find_elements class:"android.widget.TextView"
+log "找到 TextView 数量: $textviews.count"
+
+# 导出当前界面结构（用于调试）
+set $xml = dump_hierarchy
+log "界面结构已导出"
+```
+
 ### 脚本 API
 
 | 方法 | 路径 | 描述 |
@@ -878,6 +930,188 @@ log "完成"
 | POST | `/api/v1/script/execute/stream` | 执行脚本并通过 SSE 实时返回日志 |
 | POST | `/api/v1/script/execute/stream/{name}` | 执行脚本文件并通过 SSE 实时返回日志 |
 | POST | `/api/v1/script/stop/{session_id}` | 停止正在执行的脚本 |
+
+## DSL 元素信息获取详解
+
+### get_text - 获取元素文本
+
+获取指定元素的文本内容。
+
+```bash
+# 通过不同选择器获取文本
+get_text id:"com.example:id/button"
+get_text text:"确定"
+get_text class:"android.widget.TextView"
+get_text xpath:"//Button[@text='提交']"
+```
+
+### get_info - 获取元素完整信息
+
+获取元素的详细属性信息，返回一个包含以下字段的字典：
+
+```json
+{
+  "exists": true,
+  "text": "确定",
+  "class_name": "android.widget.Button",
+  "resource_id": "com.example:id/button",
+  "bounds": {"left": 100, "top": 200, "right": 300, "bottom": 400},
+  "enabled": true,
+  "focused": false,
+  "selected": false,
+  "clickable": true,
+  "checkable": false,
+  "checked": false
+}
+```
+
+属性说明：
+- `exists`: 元素是否存在
+- `text`: 元素显示的文本内容
+- `class_name`: 元素的类名
+- `resource_id`: 元素的 resource-id
+- `bounds`: 元素的边界坐标 {left, top, right, bottom}
+- `enabled`: 元素是否可用
+- `focused`: 元素是否获得焦点
+- `selected`: 元素是否被选中
+- `clickable`: 元素是否可点击
+- `checkable`: 元素是否可被勾选
+- `checked`: 元素是否已勾选
+
+```bash
+# 获取元素信息并保存到变量
+set $info = get_info id:"button_id"
+
+# 可以在条件判断中使用
+if $info.enabled
+    log "按钮可用"
+    click id:"button_id"
+else
+    log "按钮不可用"
+end
+```
+
+### find_element - 查找单个元素
+
+查找并返回第一个匹配元素的详细信息。
+
+```bash
+# 查找元素并获取其信息
+set $element = find_element text:"确定"
+
+# 检查元素是否存在
+if $element.exists
+    log "找到元素: $element.text"
+    log "边界: $element.bounds"
+else
+    log "未找到元素"
+end
+```
+
+### find_elements - 查找所有匹配元素
+
+查找所有匹配的元素并返回元素列表。
+
+```bash
+# 查找所有 TextView 元素
+set $elements = find_elements class:"android.widget.TextView"
+
+# 遍历所有匹配元素（需要在循环中处理）
+# 注意：脚本DSL中暂不支持直接遍历列表
+# 可以通过元素计数实现
+loop 10
+    if exists text:"目标文本"
+        click text:"目标文本"
+        break
+    end
+end
+```
+
+返回值结构：
+```json
+{
+  "elements": [
+    {"text": "标题1", "class_name": "android.widget.TextView", "bounds": {...}},
+    {"text": "标题2", "class_name": "android.widget.TextView", "bounds": {...}}
+  ],
+  "count": 2
+}
+```
+
+### dump_hierarchy - 导出界面结构
+
+获取当前界面的完整 XML 层次结构，用于调试和元素定位。
+
+```bash
+# 导出界面结构
+set $xml = dump_hierarchy
+log "界面 XML 长度: $xml.length"
+
+# 保存到文件（通过shell命令）
+log $xml > /sdcard/hierarchy.xml
+shell "cat /sdcard/hierarchy.xml"
+```
+
+### 实用示例
+
+**示例 1: 验证元素状态后再操作**
+
+```bash
+# 获取按钮信息
+set $btn = get_info id:"com.example:id/submit"
+
+# 检查按钮是否可用
+if $btn.exists and $btn.enabled
+    # 检查按钮文本
+    set $text = get_text id:"com.example:id/submit"
+    if $text == "提交"
+        click id:"com.example:id/submit"
+        log "点击提交按钮"
+    else
+        log "按钮文本不符合预期"
+    end
+else
+    log "按钮不存在或不可用"
+end
+```
+
+**示例 2: 根据元素状态做条件判断**
+
+```bash
+# 启动应用
+start_app "com.example.app"
+wait 2
+
+# 检查登录按钮是否存在
+set $login_btn = get_info id:"com.example:id/login"
+
+if $login_btn.exists
+    log "在登录页面"
+    input id:"username" "test@example.com"
+    input id:"password" "password123"
+    click id:"login"
+else
+    log "已登录或其他页面"
+end
+```
+
+**示例 3: 查找并点击特定文本的按钮**
+
+```bash
+# 查找确定按钮
+set $confirm = find_element text:"确定"
+
+if $confirm.exists
+    # 获取按钮边界
+    set $bounds = get_bounds id:"confirm_button"
+    log "按钮位置: $bounds"
+    
+    # 点击按钮
+    click text:"确定"
+else
+    log "未找到确定按钮"
+end
+```
 
 ## 元素定位方式详解
 
