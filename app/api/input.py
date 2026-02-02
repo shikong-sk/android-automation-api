@@ -16,7 +16,7 @@ from app.schemas import (
     HumanLongPressRequest,
     HumanDragRequest,
 )
-from typing import Literal
+from typing import Literal, Optional
 
 router = APIRouter(prefix="/input", tags=["Input"])
 
@@ -663,15 +663,102 @@ def get_element_text_by_selector(
 def get_element_bounds_by_selector(
     selector_type: str = Query(..., description="选择器类型: id, text, class, xpath"),
     selector_value: str = Query(..., description="选择器值"),
+    parent_selector_type: Optional[str] = Query(None, description="父元素选择器类型"),
+    parent_selector_value: Optional[str] = Query(None, description="父元素选择器值"),
+    sibling_selector_type: Optional[str] = Query(None, description="兄弟元素选择器类型"),
+    sibling_selector_value: Optional[str] = Query(None, description="兄弟元素选择器值"),
+    sibling_relation: str = Query("following", description="兄弟关系: following(之后), preceding(之前)"),
+    offset_x: int = Query(0, description="X坐标偏移量"),
+    offset_y: int = Query(0, description="Y坐标偏移量"),
     input_service: InputService = Depends(get_input_service),
 ):
     """
     通过选择器获取元素边界
 
-    支持多种选择器类型获取元素边界位置。
+    支持多种选择器类型获取元素边界位置，支持父级/兄弟关系和偏移。
     """
-    result = input_service.get_element_bounds_by_selector(selector_type, selector_value)
-    return {"selector_type": selector_type, "selector_value": selector_value, "result": result}
+    result = input_service.get_element_bounds_by_selector(
+        selector_type,
+        selector_value,
+        parent_selector_type,
+        parent_selector_value,
+        sibling_selector_type,
+        sibling_selector_value,
+        sibling_relation,
+        offset_x,
+        offset_y,
+    )
+    return {
+        "selector_type": selector_type,
+        "selector_value": selector_value,
+        "parent_selector_type": parent_selector_type,
+        "parent_selector_value": parent_selector_value,
+        "sibling_selector_type": sibling_selector_type,
+        "sibling_selector_value": sibling_selector_value,
+        "sibling_relation": sibling_relation,
+        "offset_x": offset_x,
+        "offset_y": offset_y,
+        "result": result
+    }
+
+
+@router.get("/find-with-parent")
+def find_with_parent(
+    child_selector_type: str = Query(..., description="子元素选择器类型"),
+    child_selector_value: str = Query(..., description="子元素选择器值"),
+    parent_selector_type: str = Query(..., description="父元素选择器类型"),
+    parent_selector_value: str = Query(..., description="父元素选择器值"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过父元素查找子元素
+
+    验证子元素是否在指定的父元素内部。
+    """
+    result = input_service.find_with_parent(
+        child_selector_type,
+        child_selector_value,
+        parent_selector_type,
+        parent_selector_value,
+    )
+    return {
+        "child_selector_type": child_selector_type,
+        "child_selector_value": child_selector_value,
+        "parent_selector_type": parent_selector_type,
+        "parent_selector_value": parent_selector_value,
+        "exists": result
+    }
+
+
+@router.get("/find-with-sibling")
+def find_with_sibling(
+    target_selector_type: str = Query(..., description="目标元素选择器类型"),
+    target_selector_value: str = Query(..., description="目标元素选择器值"),
+    sibling_selector_type: str = Query(..., description="兄弟元素选择器类型"),
+    sibling_selector_value: str = Query(..., description="兄弟元素选择器值"),
+    sibling_relation: str = Query("following", description="兄弟关系: following(之后), preceding(之前)"),
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过兄弟元素查找目标元素
+
+    基于兄弟元素的位置关系查找目标元素。
+    """
+    result = input_service.find_with_sibling(
+        target_selector_type,
+        target_selector_value,
+        sibling_selector_type,
+        sibling_selector_value,
+        sibling_relation,
+    )
+    return {
+        "target_selector_type": target_selector_type,
+        "target_selector_value": target_selector_value,
+        "sibling_selector_type": sibling_selector_type,
+        "sibling_selector_value": sibling_selector_value,
+        "sibling_relation": sibling_relation,
+        "exists": result
+    }
 
 
 # ============ 人类模拟操作 API ============
@@ -686,12 +773,14 @@ def human_click(
     模拟人类点击操作
 
     支持通过坐标或选择器定位目标位置，添加随机偏移、延迟和按压时长变化，
-    使点击行为更接近真实人类操作。
+    使点击行为更接近真实人类操作。支持父级/兄弟元素定位和坐标偏移。
 
     特性：
     - 随机点击偏移：在目标位置周围添加随机偏移
     - 随机点击延迟：点击前添加随机延迟
     - 按压时长变化：模拟不同的按压时长
+    - 父级/兄弟定位：通过父元素或兄弟元素定位目标
+    - 坐标偏移：在元素坐标基础上添加偏移量
 
     Args:
         request: 包含目标位置和随机化参数的请求体
@@ -704,6 +793,13 @@ def human_click(
         y=request.y,
         selector_type=request.selector_type,
         selector_value=request.selector_value,
+        parent_selector_type=request.parent_selector_type,
+        parent_selector_value=request.parent_selector_value,
+        sibling_selector_type=request.sibling_selector_type,
+        sibling_selector_value=request.sibling_selector_value,
+        sibling_relation=request.sibling_relation,
+        offset_x=request.offset_x,
+        offset_y=request.offset_y,
         offset_range=(request.offset_min, request.offset_max),
         delay_range=(request.delay_min, request.delay_max),
         duration_range=(request.duration_min, request.duration_max),
@@ -717,6 +813,13 @@ def human_click(
                 "y": request.y,
                 "selector_type": request.selector_type,
                 "selector_value": request.selector_value,
+                "parent_selector_type": request.parent_selector_type,
+                "parent_selector_value": request.parent_selector_value,
+                "sibling_selector_type": request.sibling_selector_type,
+                "sibling_selector_value": request.sibling_selector_value,
+                "sibling_relation": request.sibling_relation,
+                "offset_x": request.offset_x,
+                "offset_y": request.offset_y,
             },
         },
         message="点击成功" if result else "点击失败，目标元素可能不存在",

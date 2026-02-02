@@ -1,0 +1,346 @@
+# 人类行为模拟脚本
+# =====================
+# 模拟真实用户行为的自动化脚本
+# 包含：随机偏移、自然轨迹、阅读时间、犹豫模拟、真实用户旅程
+
+log "=== 开始人类行为模拟 ==="
+
+# ================= 配置区域 =================
+# 行为配置
+set $app_package = "com.example.app"
+set $reading_time = 2              # 基础阅读时间（秒）
+set $thinking_time = 1             # 思考/犹豫时间（秒）
+
+# 滑动配置
+set $scroll_speed = "ease_in_out"  # 滑动速度模式
+set $scroll_trajectory = "bezier"  # 滑动轨迹类型
+
+# 点击配置
+set $click_offset_min = 3          # 最小偏移（像素）
+set $click_offset_max = 12         # 最大偏移（像素）
+set $click_delay_min = 0.1         # 最小延迟（秒）
+set $click_delay_max = 0.4         # 最大延迟（秒）
+
+# 进度跟踪
+set $current_section = 0
+set $total_sections = 8
+
+log "配置加载完成"
+log "目标应用: ${app_package}"
+log "阅读时间: ${reading_time}秒"
+log "思考时间: ${thinking_time}秒"
+
+# ================= 辅助函数 =================
+
+# 辅助函数：模拟人类阅读
+macro human_read($duration)
+    log "模拟用户阅读 ${duration} 秒..."
+    wait $duration
+end
+
+# 辅助函数：模拟人类犹豫
+macro human_think()
+    log "模拟用户犹豫思考..."
+    wait $thinking_time
+end
+
+# 辅助函数：模拟人类点击（带犹豫）
+macro human_thoughtful_click($selector)
+    # 犹豫一下再点击
+    human_think
+
+    # 人类模拟点击
+    human_click $selector, offset_min=$click_offset_min, offset_max=$click_offset_max, delay_min=$click_delay_min, delay_max=$click_delay_max
+end
+
+# ================= 步骤 1: 启动应用 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 启动应用"
+log "========================================"
+
+log "模拟用户找到并点击应用图标..."
+
+# 模拟用户寻找图标（随机位置点击，模拟用户定位图标）
+human_click 250, 750, offset_min=20, offset_max=50, delay_min=0.3, delay_max=0.8
+
+log "等待应用启动..."
+wait 3
+
+# 模拟用户等待启动动画
+human_read 1
+
+log "✓ 应用已启动"
+
+# ================= 步骤 2: 等待主界面 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 等待主界面"
+log "========================================"
+
+log "模拟用户浏览启动画面..."
+
+# 人类模拟等待
+human_read $reading_time
+
+# 检查主界面
+if exists id:"main_content"
+    log "✓ 主界面已显示"
+else
+    log "⚠ 主界面未检测到，继续等待..."
+    wait 2
+end
+
+# 模拟用户适应界面
+human_read 1
+
+log "✓ 用户已适应界面"
+
+# ================= 步骤 3: 浏览首页 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 浏览首页"
+log "========================================"
+
+log "模拟用户浏览首页内容..."
+
+# 浏览 5 个内容区块
+set $browse_count = 1
+
+while $browse_count <= 5
+    log "浏览第 ${browse_count} 个内容区块..."
+
+    # 模拟用户阅读内容
+    human_read $reading_time
+
+    # 模拟用户下滑浏览（使用自然轨迹）
+    human_drag 500, 1100, 500, 400, trajectory=$scroll_trajectory, speed=$scroll_speed, duration=1.5
+
+    # 等待内容加载
+    wait 0.8
+
+    set $browse_count = $browse_count + 1
+end
+
+log "✓ 首页浏览完成"
+
+# ================= 步骤 4: 点击感兴趣的内容 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 点击感兴趣内容"
+log "========================================"
+
+log "模拟用户选择感兴趣的内容..."
+
+# 模拟用户浏览选项
+human_read 1.5
+
+# 模拟用户犹豫选择
+human_think
+
+# 查找并点击感兴趣的内容
+if exists text:"热门推荐"
+    log "发现热门推荐，点击查看..."
+
+    # 人类模拟点击（带犹豫和随机偏移）
+    human_thoughtful_click(text:"热门推荐")
+
+    wait 2
+elif exists id:"featured_content"
+    log "发现精选内容，点击查看..."
+
+    human_thoughtful_click(id:"featured_content")
+
+    wait 2
+else
+    log "未找到预设内容，随机点击一个..."
+
+    # 随机点击列表中的某个元素
+    human_click id:"list_item", offset_min=5, offset_max=15, delay_min=0.2, delay_max=0.5
+
+    wait 2
+end
+
+log "✓ 已进入内容详情页"
+
+# ================= 步骤 5: 阅读文章详情 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 阅读文章详情"
+log "========================================"
+
+log "模拟用户阅读文章内容..."
+
+# 模拟用户阅读开头
+human_read $reading_time
+
+# 模拟用户滑动阅读长文章
+set $scroll_count = 1
+
+while $scroll_count <= 4
+    log "阅读并滑动 (${scroll_count}/4)..."
+
+    # 自然滑动阅读
+    human_drag 500, 1000, 500, 300, trajectory="bezier", speed="ease_in_out", duration=2.0
+
+    # 模拟用户阅读片段
+    human_read $reading_time
+
+    set $scroll_count = $scroll_count + 1
+end
+
+log "✓ 文章阅读完成"
+
+# ================= 步骤 6: 互动操作 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 互动操作"
+log "========================================"
+
+log "模拟用户进行互动操作..."
+
+# 点赞操作
+if exists id:"like_button"
+    log "模拟用户点赞..."
+
+    # 犹豫一下
+    human_think
+
+    # 点击点赞（带随机偏移）
+    human_click id:"like_button", offset_min=3, offset_max=10, delay_min=0.1, delay_max=0.3
+
+    wait 0.5
+
+    log "✓ 点赞完成"
+end
+
+# 收藏操作
+if exists id:"favorite_button"
+    log "模拟用户收藏..."
+
+    human_think
+
+    human_click id:"favorite_button", offset_min=3, offset_max=10, delay_min=0.1, delay_max=0.3
+
+    wait 0.5
+
+    log "✓ 收藏完成"
+end
+
+# 分享操作
+if exists id:"share_button"
+    log "模拟用户分享..."
+
+    human_think
+
+    human_click id:"share_button", offset_min=3, offset_max=10, delay_min=0.1, delay_max=0.3
+
+    wait 1
+
+    log "✓ 分享操作完成"
+end
+
+# ================= 步骤 7: 返回操作 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 返回操作"
+log "========================================"
+
+log "模拟用户返回..."
+
+# 模拟用户决定返回
+human_think
+
+# 点击返回按钮（位置可能在左上角）
+human_click 80, 120, offset_min=5, offset_max=15, delay_min=0.2, delay_max=0.5
+
+wait 2
+
+log "✓ 已返回上一页面"
+
+# 再次浏览
+log "继续浏览其他内容..."
+
+human_read 1.5
+
+# 再次返回
+human_click 80, 120, offset_min=5, offset_max=15, delay_min=0.2, delay_max=0.5
+
+wait 2
+
+log "✓ 返回完成"
+
+# ================= 步骤 8: 完成会话 =================
+set $current_section = $current_section + 1
+log "========================================"
+log "步骤 ${current_section}/${total_sections}: 完成会话"
+log "========================================"
+
+log "模拟用户完成使用..."
+
+# 模拟用户浏览更多内容
+log "最后浏览一些内容..."
+loop 2
+    human_read 1
+    human_drag 500, 1000, 500, 400, trajectory="bezier", speed="ease_in_out", duration=1.5
+    wait 0.5
+end
+
+# 返回主页
+log "返回主页..."
+home
+wait 1
+
+# 模拟用户查看其他应用
+log "模拟用户切换到其他应用..."
+recent
+wait 1
+
+# 最终返回
+home
+wait 1
+
+log "✓ 会话完成"
+
+# ================= 模拟完成 =================
+log "========================================"
+log "人类行为模拟完成"
+log "========================================"
+
+# 统计信息
+log "模拟统计:"
+log "  - 总步骤数: ${current_section}"
+log "  - 内容浏览: 5+ 个区块"
+log "  - 文章阅读: 1 篇完整"
+log "  - 互动操作: 点赞/收藏/分享"
+log "  - 返回操作: 多次"
+
+# 最终截图
+log "截图保存..."
+shell "screencap -p /sdcard/human_behavior_simulation.png"
+
+# 导出最终状态
+set $final_state = dump_hierarchy
+log "最终状态已导出"
+
+log "========================================"
+log "=== 人类行为模拟任务完成 ==="
+log "========================================"
+log ""
+log "脚本执行完毕，模拟真实用户完成了一次完整的应用使用流程："
+log "1. 启动应用并等待加载"
+log "2. 浏览首页内容"
+log "3. 选择并点击感兴趣的内容"
+log "4. 阅读文章详情"
+log "5. 进行点赞、收藏、分享等互动"
+log "6. 返回并继续浏览"
+log "7. 完成会话并返回主页"
+log ""
+log "所有操作都添加了："
+log "- 随机偏移（模拟手指定位误差）"
+log "- 操作延迟（模拟人类反应时间）"
+log "- 阅读时间（模拟用户阅读内容）"
+log "- 犹豫时间（模拟用户决策过程）"
+log "- 自然轨迹（模拟真实手指滑动）"
+
+exit 0

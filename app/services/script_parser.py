@@ -67,6 +67,12 @@ class TokenType(Enum):
     SELECTOR_TEXT = auto()
     SELECTOR_XPATH = auto()
     SELECTOR_CLASS = auto()
+    SELECTOR_COORDINATE = auto()
+
+    # 选择器修饰符
+    SELECTOR_PARENT = auto()
+    SELECTOR_SIBLING = auto()
+    SELECTOR_SIBLING_RELATION = auto()
 
     # 操作符和分隔符
     COLON = auto()
@@ -126,6 +132,7 @@ class CommandNode(ASTNode):
     args: List[Any] = field(default_factory=list)
     selector_type: Optional[str] = None
     selector_value: Optional[str] = None
+    selector_modifiers: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -253,6 +260,25 @@ class ScriptLexer:
         "text": TokenType.SELECTOR_TEXT,
         "xpath": TokenType.SELECTOR_XPATH,
         "class": TokenType.SELECTOR_CLASS,
+        "coord": TokenType.SELECTOR_COORDINATE,
+        "parent": TokenType.SELECTOR_PARENT,
+        "sibling": TokenType.SELECTOR_SIBLING,
+        "sibling_relation": TokenType.SELECTOR_SIBLING_RELATION,
+    }
+
+    MODIFIER_KEYWORDS: Dict[str, str] = {
+        "parent": "parent",
+        "parent_id": "parent_id",
+        "parent_text": "parent_text",
+        "parent_class": "parent_class",
+        "sibling": "sibling",
+        "sibling_id": "sibling_id",
+        "sibling_text": "sibling_text",
+        "sibling_class": "sibling_class",
+        "sibling_relation": "sibling_relation",
+        "offset_x": "offset_x",
+        "offset_y": "offset_y",
+        "offset": "offset",
     }
 
     def __init__(self, source: str):
@@ -504,6 +530,21 @@ class ScriptParser:
         TokenType.SELECTOR_CLASS,
     }
 
+    MODIFIER_KEYWORDS: Dict[str, str] = {
+        "parent": "parent",
+        "parent_id": "parent_id",
+        "parent_text": "parent_text",
+        "parent_class": "parent_class",
+        "sibling": "sibling",
+        "sibling_id": "sibling_id",
+        "sibling_text": "sibling_text",
+        "sibling_class": "sibling_class",
+        "sibling_relation": "sibling_relation",
+        "offset_x": "offset_x",
+        "offset_y": "offset_y",
+        "offset": "offset",
+    }
+
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.pos = 0
@@ -603,7 +644,6 @@ class ScriptParser:
         token = self.advance()
         node = CommandNode(command=token.value, line=token.line, column=token.column)
 
-        # 解析选择器或参数
         while self.current_token().type not in (TokenType.NEWLINE, TokenType.EOF):
             if self.current_token().type in self.SELECTOR_TOKENS:
                 selector_token = self.advance()
@@ -616,21 +656,30 @@ class ScriptParser:
             elif self.current_token().type == TokenType.NUMBER:
                 node.args.append(self.advance().value)
             elif self.current_token().type == TokenType.IDENTIFIER:
-                # 检查是否是命名参数（identifier = value）
                 identifier = self.advance().value
                 if self.current_token().type == TokenType.EQUALS:
-                    self.advance()  # 消费 '='
-                    # 获取值
+                    self.advance()
                     if self.current_token().type in (
                         TokenType.STRING,
                         TokenType.NUMBER,
                         TokenType.IDENTIFIER,
                     ):
                         value = self.advance().value
-                        # 将命名参数组合为 "key=value" 格式
-                        node.args.append(f"{identifier}={value}")
+                        if identifier in self.MODIFIER_KEYWORDS:
+                            if identifier in ("offset_x", "offset_y", "offset"):
+                                node.selector_modifiers[identifier] = int(value) if str(value).isdigit() else value
+                            elif identifier in ("sibling_relation",):
+                                node.selector_modifiers[identifier] = value
+                            else:
+                                parts = value.split(":")
+                                if len(parts) == 2:
+                                    node.selector_modifiers[f"{identifier}_type"] = parts[0]
+                                    node.selector_modifiers[f"{identifier}_value"] = parts[1]
+                                else:
+                                    node.selector_modifiers[identifier] = value
+                        else:
+                            node.args.append(f"{identifier}={value}")
                     else:
-                        # 没有值，只添加标识符
                         node.args.append(identifier)
                 else:
                     node.args.append(identifier)

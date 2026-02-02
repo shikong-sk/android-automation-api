@@ -291,6 +291,22 @@ def take_screenshot(
     return {"message": "Screenshot saved", "path": local_path}
 
 
+@router.get("/screenshot-base64")
+def take_screenshot_base64(
+    adb_service: AdbService = Depends(get_adb_service),
+):
+    """
+    截取屏幕截图并返回 base64 编码
+
+    Returns:
+        dict: 包含 base64 图片数据和屏幕尺寸
+    """
+    result = adb_service.take_screenshot_base64()
+    if "error" in result and result.get("image") is None:
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to take screenshot"))
+    return result
+
+
 # ==================== 设备控制 ====================
 
 

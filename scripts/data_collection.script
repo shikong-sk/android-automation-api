@@ -1,0 +1,242 @@
+# 数据采集脚本
+# =================
+# 演示从列表页面采集数据的完整流程
+# 包含：分页处理、数据存储、进度跟踪、错误恢复
+
+log "=== 开始数据采集 ==="
+
+# ================= 配置区域 =================
+# 采集配置
+set $app_package = "com.example.app"
+set $max_pages = 10              # 最大采集页数
+set $items_per_page = 20         # 每页预估数据条数
+
+# 等待配置
+set $page_load_timeout = 10      # 页面加载超时时间（秒）
+set $scroll_wait = 1.5           # 滚动后等待时间（秒）
+
+# 输出配置
+set $output_file = "/sdcard/collected_data.txt"
+set $csv_header = "序号,标题,链接,时间"
+
+# 进度跟踪
+set $current_page = 1
+set $total_items = 0
+set $collected_data = ""
+
+log "配置加载完成"
+log "目标应用: ${app_package}"
+log "最大采集页数: ${max_pages}"
+log "输出文件: ${output_file}"
+
+# ================= 初始化 =================
+log "初始化采集环境..."
+
+# 清空输出文件
+shell "echo '${csv_header}' > ${output_file}"
+log "输出文件已初始化"
+
+# 启动应用
+start_app "${app_package}"
+wait 3
+
+# 等待列表页面加载
+log "等待列表页面加载..."
+wait_element id:"list_view" $page_load_timeout
+
+if not exists id:"list_view"
+    log "✗ 列表页面加载失败"
+    shell "screencap -p /sdcard/error_list_page.png"
+    exit 1
+end
+
+log "✓ 列表页面已加载"
+
+# ================= 数据采集主循环 =================
+log "开始数据采集..."
+
+# 主采集循环
+while $current_page <= $max_pages
+    log "========================================"
+    log "采集第 ${current_page} 页数据"
+    log "========================================"
+
+    # 步骤 1: 等待当前页面数据加载完成
+    log "步骤 1: 等待页面数据加载..."
+
+    # 检查加载状态
+    if exists id:"loading"
+        log "检测到加载动画，等待消失..."
+        wait_gone id:"loading" $page_load_timeout
+    end
+
+    # 额外等待确保数据渲染完成
+    wait 1
+
+    # 步骤 2: 采集当前页面数据
+    log "步骤 2: 采集当前页面数据..."
+
+    # 查找所有数据项（根据实际界面调整选择器）
+    set $data_items = find_elements class:"android.widget.TextView"
+
+    if $data_items.count > 0
+        log "✓ 本页找到 ${data_items.count} 个文本元素"
+
+        # 记录每条数据
+        set $page_item_count = 0
+        set $item_index = 1
+
+        # 遍历所有匹配的元素
+        loop $data_items.count
+            # 获取元素信息
+            set $element_info = get_info xpath:"(//android.widget.TextView)[${item_index}]"
+
+            if $element_info.exists
+                set $element_text = $element_info.text
+                set $element_bounds = $element_info.bounds
+
+                # 过滤有效数据（根据实际需求调整过滤条件）
+                if $element_text != "" and $element_text != " "
+                    # 构建数据行
+                    set $row_number = $total_items + 1
+                    set $data_row = "${row_number},${element_text},N/A,N/A"
+
+                    # 追加到收集的数据
+                    set $collected_data = "${collected_data}${data_row}\n"
+
+                    # 写入文件
+                    shell "echo '${data_row}' >> ${output_file}"
+
+                    set $page_item_count = $page_item_count + 1
+                    set $total_items = $total_items + 1
+
+                    log "  [$row_number] $element_text"
+                end
+            end
+
+            set $item_index = $item_index + 1
+        end
+
+        log "✓ 本页有效数据: ${page_item_count} 条"
+    else
+        log "⚠ 本页未找到数据元素，可能已到最后一页"
+    end
+
+    # 步骤 3: 记录进度
+    log "步骤 3: 记录采集进度..."
+    log "累计采集: ${total_items} 条数据"
+    log "当前页: ${current_page}/${max_pages}"
+
+    # 步骤 4: 检查是否继续采集
+    log "步骤 4: 检查是否继续..."
+
+    # 如果当前页数据少于预期，可能已到最后一页
+    if $data_items.count < 5
+        log "⚠ 数据量较少，可能已到最后一页"
+    end
+
+    # 步骤 5: 滑动到下一页
+    if $current_page < $max_pages
+        log "步骤 5: 滑动到下一页..."
+
+        # 使用人类模拟滑动，更自然
+        human_drag 500, 1200, 500, 300, trajectory="bezier", speed="ease_in_out", duration=1.5
+
+        # 等待新数据加载
+        wait $scroll_wait
+
+        # 检查加载动画
+        if exists id:"loading"
+            log "等待新数据加载..."
+            wait_gone id:"loading" $page_load_timeout
+        end
+
+        # 额外等待确保数据完全渲染
+        wait 1
+
+        # 验证是否真的滑动到了新页面
+        # （这里可以添加验证逻辑，根据实际需求调整）
+    else
+        log "已达到最大采集页数"
+    end
+
+    # 递增页码
+    set $current_page = $current_page + 1
+
+    # 步骤 6: 定期保存进度
+    if $current_page % 3 == 0
+        log "定期保存进度..."
+        log "当前已采集 ${total_items} 条数据"
+    end
+end
+
+# ================= 采集完成处理 =================
+log "========================================"
+log "数据采集完成"
+log "========================================"
+
+# 统计信息
+log "采集统计:"
+log "  - 总页数: ${current_page - 1}"
+log "  - 总数据条数: ${total_items}"
+log "  - 输出文件: ${output_file}"
+
+# 验证输出文件
+set $file_exists = shell "ls -l ${output_file}"
+log "文件信息: $file_exists"
+
+# 读取前几行数据验证
+log "数据预览 (前5条):"
+shell "head -n 6 ${output_file}"
+
+# ================= 后续操作 =================
+log "执行采集后操作..."
+
+# 返回顶部
+swipe down 0.8
+wait 0.5
+
+# 截图保存采集结果
+shell "screencap -p /sdcard/data_collection_result.png"
+
+# 导出最终界面结构（用于调试）
+set $final_hierarchy = dump_hierarchy
+log "最终界面结构已导出"
+
+# ================= 清理与返回 =================
+log "清理采集环境..."
+
+# 返回主页
+home
+wait 1
+
+# 记录完成日志
+log "=== 数据采集任务完成 ==="
+log "总耗时: ${current_page - 1} 页"
+log "采集数据: ${total_items} 条"
+log "输出文件: ${output_file}"
+
+# 显示文件内容行数
+set $line_count = shell "wc -l < ${output_file}"
+log "输出文件行数: $line_count"
+
+exit 0
+
+# ================= 错误处理 =================
+# 错误处理子脚本（可在主流程中调用）
+# ==========================================
+sub_error_handler:
+    log "发生错误，执行错误处理..."
+
+    # 截图保存错误状态
+    shell "screencap -p /sdcard/error_data_collection.png"
+
+    # 导出当前界面结构
+    set $error_hierarchy = dump_hierarchy
+    log "错误界面结构已导出"
+
+    # 保存已采集的数据
+    shell "echo '${collected_data}' > ${output_file}.backup"
+
+    log "错误处理完成，数据已备份"
+    return

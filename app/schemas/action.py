@@ -48,13 +48,20 @@ class HumanClickRequest(BaseModel):
     """
     人类模拟点击请求模型
 
-    支持通过坐标或选择器定位目标位置。
+    支持通过坐标或选择器定位目标位置，支持父级/兄弟元素定位和坐标偏移。
     """
 
     x: Optional[int] = Field(None, description="目标 x 坐标")
     y: Optional[int] = Field(None, description="目标 y 坐标")
     selector_type: Optional[str] = Field(None, description="选择器类型: id, text, class, xpath")
     selector_value: Optional[str] = Field(None, description="选择器值")
+    parent_selector_type: Optional[str] = Field(None, description="父元素选择器类型")
+    parent_selector_value: Optional[str] = Field(None, description="父元素选择器值")
+    sibling_selector_type: Optional[str] = Field(None, description="兄弟元素选择器类型")
+    sibling_selector_value: Optional[str] = Field(None, description="兄弟元素选择器值")
+    sibling_relation: Literal["following", "preceding"] = Field("following", description="兄弟关系: following(之后), preceding(之前)")
+    offset_x: int = Field(0, description="X 坐标偏移")
+    offset_y: int = Field(0, description="Y 坐标偏移")
     offset_min: int = Field(3, description="随机偏移最小值（像素）")
     offset_max: int = Field(10, description="随机偏移最大值（像素）")
     delay_min: float = Field(0.05, description="点击前延迟最小值（秒）")
@@ -66,12 +73,21 @@ class HumanClickRequest(BaseModel):
 class HumanDoubleClickRequest(BaseModel):
     """
     人类模拟双击请求模型
+
+    支持通过坐标或选择器定位目标位置，支持父级/兄弟元素定位和坐标偏移。
     """
 
     x: Optional[int] = Field(None, description="目标 x 坐标")
     y: Optional[int] = Field(None, description="目标 y 坐标")
     selector_type: Optional[str] = Field(None, description="选择器类型: id, text, class, xpath")
     selector_value: Optional[str] = Field(None, description="选择器值")
+    parent_selector_type: Optional[str] = Field(None, description="父元素选择器类型")
+    parent_selector_value: Optional[str] = Field(None, description="父元素选择器值")
+    sibling_selector_type: Optional[str] = Field(None, description="兄弟元素选择器类型")
+    sibling_selector_value: Optional[str] = Field(None, description="兄弟元素选择器值")
+    sibling_relation: Literal["following", "preceding"] = Field("following", description="兄弟关系: following(之后), preceding(之前)")
+    offset_x: int = Field(0, description="X 坐标偏移")
+    offset_y: int = Field(0, description="Y 坐标偏移")
     offset_min: int = Field(3, description="随机偏移最小值（像素）")
     offset_max: int = Field(8, description="随机偏移最大值（像素）")
     interval_min: float = Field(0.1, description="两次点击间隔最小值（秒）")
@@ -83,12 +99,21 @@ class HumanDoubleClickRequest(BaseModel):
 class HumanLongPressRequest(BaseModel):
     """
     人类模拟长按请求模型
+
+    支持通过坐标或选择器定位目标位置，支持父级/兄弟元素定位和坐标偏移。
     """
 
     x: Optional[int] = Field(None, description="目标 x 坐标")
     y: Optional[int] = Field(None, description="目标 y 坐标")
     selector_type: Optional[str] = Field(None, description="选择器类型: id, text, class, xpath")
     selector_value: Optional[str] = Field(None, description="选择器值")
+    parent_selector_type: Optional[str] = Field(None, description="父元素选择器类型")
+    parent_selector_value: Optional[str] = Field(None, description="父元素选择器值")
+    sibling_selector_type: Optional[str] = Field(None, description="兄弟元素选择器类型")
+    sibling_selector_value: Optional[str] = Field(None, description="兄弟元素选择器值")
+    sibling_relation: Literal["following", "preceding"] = Field("following", description="兄弟关系: following(之后), preceding(之前)")
+    offset_x: int = Field(0, description="X 坐标偏移")
+    offset_y: int = Field(0, description="Y 坐标偏移")
     duration_min: float = Field(0.8, description="长按时长最小值（秒）")
     duration_max: float = Field(1.5, description="长按时长最大值（秒）")
     offset_min: int = Field(3, description="随机偏移最小值（像素）")

@@ -1,0 +1,138 @@
+# 变量插值示例脚本
+# =================
+# 演示DSL中的变量插值功能 ${variable}
+
+log "=== 变量插值示例脚本 ==="
+
+# ========== 1. 基础字符串插值 ==========
+log "--- 基础字符串插值 ---"
+
+set $greeting = "Hello"
+set $name = "World"
+log "输出: ${greeting}, ${name}!"
+log "输出: 数字插值: ${greeting} ${name}"  # 数字变量会被转换为字符串
+
+# ========== 2. 多变量插值 ==========
+log "--- 多变量插值 ---"
+
+set $x = 10
+set $y = 20
+log "计算: x = ${x}, y = ${y}"
+log "计算: x + y = ${x} + ${y}"
+
+# ========== 3. 选择器值插值 ==========
+log "--- 选择器值插值 ---"
+
+# 使用变量构建选择器
+set $app_package = "com.android.settings"
+set $title_id = "${app_package}/search_action_bar_title"
+log "选择器ID: ${title_id}"
+
+# 组合多个变量
+set $prefix = "com.android"
+set $suffix = "settings"
+set $full_package = "${prefix}.${suffix}"
+log "完整包名: ${full_package}"
+
+# ========== 4. 命令参数插值 ==========
+log "--- 命令参数插值 ---"
+
+# 准备输入数据
+set $username = "test@example.com"
+set $password = "password123"
+set $search_query = "Wi-Fi"
+
+log "用户名: ${username}"
+log "密码: ${password}"
+log "搜索关键词: ${search_query}"
+
+# 模拟输入（需要配合真实界面）
+# input id:"username" "${username}"
+# input id:"password" "${password}"
+
+# ========== 5. 结合元素操作使用变量插值 ==========
+log "--- 结合元素操作使用变量插值 ---"
+
+# 启动应用
+start_app "${full_package}"
+wait 2
+
+# 获取并显示页面标题
+set $current_title = get_text id:"android:id/title"
+log "当前页面: ${current_title}"
+
+# 如果标题包含特定文本，执行操作
+if exists id:"android:id/title"
+    set $title = get_text id:"android:id/title"
+    log "页面标题是: ${title}"
+    
+    # 使用变量在日志中构建消息
+    log "正在查看 ${title} 页面的内容"
+end
+
+# ========== 6. 动态构建选择器 ==========
+log "--- 动态构建选择器 ---"
+
+# 查找不同的页面元素
+set $page_prefix = "com.android.settings:id/subtitle"
+
+# 使用循环测试不同的元素
+loop 3
+    set $index = 2
+    # 模拟动态选择器（实际使用时需要根据UI结构）
+    # log "检查元素索引: ${index}"
+    wait 0.5
+end
+
+# ========== 7. 人类模拟操作中的变量插值 ==========
+log "--- 人类模拟操作中的变量插值 ---"
+
+# 点击使用变量坐标
+set $target_x = 500
+set $target_y = 1000
+log "准备点击坐标: ${target_x}, ${target_y}"
+
+# human_click ${target_x}, ${target_y}
+
+# 命名参数中的变量插值
+set $offset = 5
+set $delay = 0.1
+# human_click 500, 800, offset_min=${offset}, delay_min=${delay}
+
+# ========== 8. 条件判断中的变量插值 ==========
+log "--- 条件判断中的变量插值 ---"
+
+set $app_name = "Settings"
+set $is_running = true
+
+# 注意: 条件判断中直接使用变量名（不需要 ${}）
+# 因为条件判断使用的是变量本身，不是字符串
+if $is_running
+    log "应用 ${app_name} 正在运行"
+else
+    log "应用 ${app_name} 未运行"
+end
+
+# ========== 9. 组合多个变量构建复杂字符串 ==========
+log "--- 组合多个变量构建复杂字符串 ---"
+
+set $protocol = "http"
+set $host = "localhost"
+set $port = 8000
+set $url = "${protocol}://${host}:${port}/api/status"
+log "服务地址: ${url}"
+
+# ========== 10. 变量插值与默认值示例 ==========
+log "--- 变量插值与默认值示例 ---"
+
+set $message = "你好"
+log "输出: ${message}!"
+
+# 使用未定义的变量（会保持原样）
+log "未定义变量演示: ${undefined_var}"
+
+# ========== 清理和返回 ==========
+log "=== 脚本执行完成 ==="
+
+# 返回主页
+home

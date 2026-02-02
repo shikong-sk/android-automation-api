@@ -1,18 +1,38 @@
 <template>
-  <div class="space-y-6">
-    <!-- 输入操作卡片 -->
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center gap-2">
-          <el-icon><Pen /></el-icon>
-          <span class="font-semibold">输入操作</span>
-        </div>
-      </template>
-      
-      <el-tabs v-model="activeTab" class="input-tabs">
-        <el-tab-pane label="点击元素" name="click">
-          <div class="space-y-4">
-            <div class="flex gap-2">
+  <div class="input-page">
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">输入控制</h2>
+        <p class="text-gray-500 mt-1">控制设备的输入操作</p>
+      </div>
+      <div class="flex gap-2">
+        <el-button-group>
+          <el-button :type="layoutMode === 'split' ? 'primary' : ''" @click="layoutMode = 'split'">
+            分栏
+          </el-button>
+          <el-button :type="layoutMode === 'single' ? 'primary' : ''" @click="layoutMode = 'single'">
+            单一
+          </el-button>
+        </el-button-group>
+      </div>
+    </div>
+    
+    <div class="flex gap-6" :class="{ 'flex-col': layoutMode === 'single' }">
+      <!-- 左侧：输入操作控制面板 -->
+      <div class="flex-1 min-w-0" :class="{ 'w-full': layoutMode === 'single', 'w-1/2': layoutMode === 'split' }">
+        <!-- 输入操作卡片 -->
+        <el-card shadow="hover" class="mb-6">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <el-icon><Pen /></el-icon>
+              <span class="font-semibold">输入操作</span>
+            </div>
+          </template>
+          
+          <el-tabs v-model="activeTab" class="input-tabs">
+            <el-tab-pane label="点击元素" name="click">
+              <div class="space-y-4">
+                <div class="flex gap-2">
               <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
                 <el-option label="By ID" value="id" />
                 <el-option label="By Text" value="text" />
@@ -32,6 +52,84 @@
                 </template>
               </el-input>
             </div>
+
+            <!-- 高级定位选项 -->
+            <el-collapse v-model="clickAdvancedExpanded">
+              <el-collapse-item title="高级定位（父级/兄弟/偏移）" name="advanced">
+                <div class="space-y-4">
+                  <!-- 父级定位 -->
+                  <div class="border rounded p-3 bg-gray-50">
+                    <div class="text-sm font-medium text-gray-700 mb-2">父级元素定位</div>
+                    <div class="flex gap-2">
+                      <el-select v-model="clickParentType" placeholder="父级类型" class="w-28">
+                        <el-option label="By ID" value="id" />
+                        <el-option label="By Text" value="text" />
+                        <el-option label="By XPath" value="xpath" />
+                      </el-select>
+                      <el-input
+                        v-model="clickParentValue"
+                        placeholder="父元素定位值"
+                        clearable
+                        class="flex-1"
+                      >
+                        <template #append v-if="clickParentType === 'xpath'">
+                          <el-button @click="openXPathGenerator('clickParent')">
+                            生成
+                          </el-button>
+                        </template>
+                      </el-input>
+                    </div>
+                  </div>
+
+                  <!-- 兄弟元素定位 -->
+                  <div class="border rounded p-3 bg-gray-50">
+                    <div class="text-sm font-medium text-gray-700 mb-2">兄弟元素定位</div>
+                    <div class="flex gap-2 mb-2">
+                      <el-select v-model="clickSiblingType" placeholder="兄弟类型" class="w-28">
+                        <el-option label="By ID" value="id" />
+                        <el-option label="By Text" value="text" />
+                        <el-option label="By XPath" value="xpath" />
+                      </el-select>
+                      <el-input
+                        v-model="clickSiblingValue"
+                        placeholder="兄弟元素定位值"
+                        clearable
+                        class="flex-1"
+                      >
+                        <template #append v-if="clickSiblingType === 'xpath'">
+                          <el-button @click="openXPathGenerator('clickSibling')">
+                            生成
+                          </el-button>
+                        </template>
+                      </el-input>
+                    </div>
+                    <el-radio-group v-model="clickSiblingRelation" size="small">
+                      <el-radio value="following">之后的兄弟</el-radio>
+                      <el-radio value="preceding">之前的兄弟</el-radio>
+                    </el-radio-group>
+                  </div>
+
+                  <!-- 坐标偏移 -->
+                  <div class="border rounded p-3 bg-gray-50">
+                    <div class="text-sm font-medium text-gray-700 mb-2">坐标偏移</div>
+                    <div class="flex gap-4">
+                      <div>
+                        <span class="text-xs text-gray-500">X 偏移:</span>
+                        <el-input-number v-model="clickOffsetX" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                      </div>
+                      <div>
+                        <span class="text-xs text-gray-500">Y 偏移:</span>
+                        <el-input-number v-model="clickOffsetY" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                      </div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">
+                      正值向右/向下，负值向左/向上
+                    </div>
+                  </div>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
+
             <div class="flex gap-2">
               <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
                 点击元素
@@ -267,25 +365,101 @@
               </el-radio-group>
 
               <!-- 选择器定位 -->
-              <div v-if="humanTargetMode === 'selector'" class="flex gap-2">
-                <el-select v-model="humanSelectorType" placeholder="选择器类型" class="w-32">
-                  <el-option label="By ID" value="id" />
-                  <el-option label="By Text" value="text" />
-                  <el-option label="By Class" value="class" />
-                  <el-option label="By XPath" value="xpath" />
-                </el-select>
-                <el-input
-                  v-model="humanSelectorValue"
-                  :placeholder="getPlaceholder(humanSelectorType)"
-                  clearable
-                  class="flex-1"
-                >
-                  <template #append v-if="humanSelectorType === 'xpath'">
-                    <el-button @click="openXPathGenerator('human')">
-                      生成
-                    </el-button>
-                  </template>
-                </el-input>
+              <div v-if="humanTargetMode === 'selector'" class="space-y-4">
+                <div class="flex gap-2">
+                  <el-select v-model="humanSelectorType" placeholder="选择器类型" class="w-32">
+                    <el-option label="By ID" value="id" />
+                    <el-option label="By Text" value="text" />
+                    <el-option label="By Class" value="class" />
+                    <el-option label="By XPath" value="xpath" />
+                  </el-select>
+                  <el-input
+                    v-model="humanSelectorValue"
+                    :placeholder="getPlaceholder(humanSelectorType)"
+                    clearable
+                    class="flex-1"
+                  >
+                    <template #append v-if="humanSelectorType === 'xpath'">
+                      <el-button @click="openXPathGenerator('human')">
+                        生成
+                      </el-button>
+                    </template>
+                  </el-input>
+                </div>
+
+                <!-- 人类模拟高级定位 -->
+                <el-collapse v-model="humanAdvancedLocExpanded">
+                  <el-collapse-item title="高级定位（父级/兄弟/偏移）" name="advanced">
+                    <div class="space-y-4">
+                      <!-- 父级定位 -->
+                      <div class="border rounded p-3 bg-gray-50">
+                        <div class="text-sm font-medium text-gray-700 mb-2">父级元素定位</div>
+                        <div class="flex gap-2">
+                          <el-select v-model="humanParentType" placeholder="父级类型" class="w-28">
+                            <el-option label="By ID" value="id" />
+                            <el-option label="By Text" value="text" />
+                            <el-option label="By XPath" value="xpath" />
+                          </el-select>
+                          <el-input
+                            v-model="humanParentValue"
+                            placeholder="父元素定位值"
+                            clearable
+                            class="flex-1"
+                          >
+                            <template #append v-if="humanParentType === 'xpath'">
+                              <el-button @click="openXPathGenerator('humanParent')">
+                                生成
+                              </el-button>
+                            </template>
+                          </el-input>
+                        </div>
+                      </div>
+
+                      <!-- 兄弟元素定位 -->
+                      <div class="border rounded p-3 bg-gray-50">
+                        <div class="text-sm font-medium text-gray-700 mb-2">兄弟元素定位</div>
+                        <div class="flex gap-2 mb-2">
+                          <el-select v-model="humanSiblingType" placeholder="兄弟类型" class="w-28">
+                            <el-option label="By ID" value="id" />
+                            <el-option label="By Text" value="text" />
+                            <el-option label="By XPath" value="xpath" />
+                          </el-select>
+                          <el-input
+                            v-model="humanSiblingValue"
+                            placeholder="兄弟元素定位值"
+                            clearable
+                            class="flex-1"
+                          >
+                            <template #append v-if="humanSiblingType === 'xpath'">
+                              <el-button @click="openXPathGenerator('humanSibling')">
+                                生成
+                              </el-button>
+                            </template>
+                          </el-input>
+                        </div>
+                        <el-radio-group v-model="humanSiblingRelation" size="small">
+                          <el-radio value="following">之后的兄弟</el-radio>
+                          <el-radio value="preceding">之前的兄弟</el-radio>
+                        </el-radio-group>
+                      </div>
+
+                      <!-- 坐标偏移 -->
+                      <div class="border rounded p-3 bg-gray-50">
+                        <div class="text-sm font-medium text-gray-700 mb-2">坐标偏移</div>
+                        <div class="flex gap-4">
+                          <div>
+                            <span class="text-xs text-gray-500">X 偏移:</span>
+                            <el-input-number v-model="humanOffsetX" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                          </div>
+                          <div>
+                            <span class="text-xs text-gray-500">Y 偏移:</span>
+                            <el-input-number v-model="humanOffsetY" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </el-collapse-item>
+                </el-collapse>
               </div>
 
               <!-- 坐标定位 -->
@@ -591,18 +765,42 @@
       @insert="handleXPathInsert"
     />
   </div>
+
+  <!-- 右侧：屏幕预览（仅在分栏模式下显示） -->
+  <div v-if="layoutMode === 'split'" class="w-1/2 min-w-[400px]">
+    <ScreenPreview
+      ref="screenPreviewRef"
+      :auto-refresh-interval="5000"
+      @coordinate-click="handleCoordinateClick"
+      @coordinate-update="handleCoordinateUpdate"
+    />
+  </div>
+</div>
+</div>
+
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
 import { Pen, Code, Search, ArrowUp, ArrowDown, Terminal, Copy } from '@vicons/fa'
 import XPathGenerator from './XPathGenerator.vue'
+import ScreenPreview from './ScreenPreview.vue'
 
 const activeTab = ref('click')
+const layoutMode = ref('split')
+const screenPreviewRef = ref(null)
 const clickLocateType = ref('id')
 const clickLocateValue = ref('')
+const clickAdvancedExpanded = ref([])
+const clickParentType = ref('id')
+const clickParentValue = ref('')
+const clickSiblingType = ref('text')
+const clickSiblingValue = ref('')
+const clickSiblingRelation = ref('following')
+const clickOffsetX = ref(0)
+const clickOffsetY = ref(0)
 const textLocateType = ref('id')
 const textLocateValue = ref('')
 const textInput = ref('')
@@ -629,7 +827,7 @@ const xmlContainerRef = ref(null)
 
 // XPath 生成器相关
 const showXPathGenerator = ref(false)
-const xpathInsertTarget = ref('') // 'click', 'locate', 'text', 'wait', 'info', 'human'
+const xpathInsertTarget = ref('') // 'click', 'clickParent', 'clickSibling', 'locate', 'text', 'wait', 'info', 'human', 'humanDragStart', 'humanDragEnd'
 
 // ============ 人类模拟操作相关状态 ============
 const humanActionType = ref('click') // 'click', 'doubleClick', 'longPress', 'drag'
@@ -657,8 +855,18 @@ const humanDragDuration = ref(1.0)
 
 // 高级配置
 const humanAdvancedExpanded = ref([])
+const humanAdvancedLocExpanded = ref([])
 const humanOffsetMin = ref(3)
 const humanOffsetMax = ref(10)
+
+// 人类模拟高级定位
+const humanParentType = ref('id')
+const humanParentValue = ref('')
+const humanSiblingType = ref('text')
+const humanSiblingValue = ref('')
+const humanSiblingRelation = ref('following')
+const humanOffsetX = ref(0)
+const humanOffsetY = ref(0)
 const humanDelayMin = ref(0.05)
 const humanDelayMax = ref(0.3)
 const humanDurationMin = ref(0.05)
@@ -715,6 +923,14 @@ function handleXPathInsert(xpath) {
       clickLocateValue.value = xpath
       clickLocateType.value = 'xpath'
       break
+    case 'clickParent':
+      clickParentValue.value = xpath
+      clickParentType.value = 'xpath'
+      break
+    case 'clickSibling':
+      clickSiblingValue.value = xpath
+      clickSiblingType.value = 'xpath'
+      break
     case 'locate':
       locateValue.value = xpath
       locateType.value = 'xpath'
@@ -734,6 +950,14 @@ function handleXPathInsert(xpath) {
     case 'human':
       humanSelectorValue.value = xpath
       humanSelectorType.value = 'xpath'
+      break
+    case 'humanParent':
+      humanParentValue.value = xpath
+      humanParentType.value = 'xpath'
+      break
+    case 'humanSibling':
+      humanSiblingValue.value = xpath
+      humanSiblingType.value = 'xpath'
       break
     case 'humanDragStart':
       humanDragStartSelectorValue.value = xpath
@@ -765,27 +989,50 @@ const clickPlaceholder = computed(() => {
 async function handleClick() {
   try {
     let response
-    switch (clickLocateType.value) {
-      case 'id':
-        response = await inputApi.click(clickLocateValue.value)
-        break
-      case 'text':
-        response = await inputApi.clickByText(clickLocateValue.value)
-        break
-      case 'class':
-        response = await inputApi.clickByClass(clickLocateValue.value)
-        break
-      case 'xpath':
-        response = await inputApi.clickByXpath(clickLocateValue.value)
-        break
+
+    if (clickParentValue.value || clickSiblingValue.value || clickOffsetX.value !== 0 || clickOffsetY.value !== 0) {
+      const options = {
+        parent_selector_type: clickParentValue.value ? clickParentType.value : null,
+        parent_selector_value: clickParentValue.value || null,
+        sibling_selector_type: clickSiblingValue.value ? clickSiblingType.value : null,
+        sibling_selector_value: clickSiblingValue.value || null,
+        sibling_relation: clickSiblingRelation.value,
+        offset_x: clickOffsetX.value,
+        offset_y: clickOffsetY.value
+      }
+      response = await inputApi.getElementBoundsBySelector(clickLocateType.value, clickLocateValue.value, options)
+      if (response.result?.exists && response.result?.center_x != null && response.result?.center_y != null) {
+        const x = response.result.center_x
+        const y = response.result.center_y
+        response = await inputApi.execute('click', { x, y })
+      } else {
+        ElMessage.warning('元素不存在，无法点击')
+        return
+      }
+    } else {
+      switch (clickLocateType.value) {
+        case 'id':
+          response = await inputApi.click(clickLocateValue.value)
+          break
+        case 'text':
+          response = await inputApi.clickByText(clickLocateValue.value)
+          break
+        case 'class':
+          response = await inputApi.clickByClass(clickLocateValue.value)
+          break
+        case 'xpath':
+          response = await inputApi.clickByXpath(clickLocateValue.value)
+          break
+      }
     }
+
     if (response.success) {
       ElMessage.success('点击成功')
     } else {
       ElMessage.warning('元素不存在，无法点击')
     }
   } catch (err) {
-    ElMessage.error('点击失败')
+    ElMessage.error('点击失败: ' + err.message)
   }
 }
 
@@ -1152,6 +1399,22 @@ async function handleHumanClick() {
   } else {
     options.selector_type = humanSelectorType.value
     options.selector_value = humanSelectorValue.value
+
+    if (humanParentValue.value) {
+      options.parent_selector_type = humanParentType.value
+      options.parent_selector_value = humanParentValue.value
+    }
+
+    if (humanSiblingValue.value) {
+      options.sibling_selector_type = humanSiblingType.value
+      options.sibling_selector_value = humanSiblingValue.value
+      options.sibling_relation = humanSiblingRelation.value
+    }
+
+    if (humanOffsetX.value !== 0 || humanOffsetY.value !== 0) {
+      options.offset_x = humanOffsetX.value
+      options.offset_y = humanOffsetY.value
+    }
   }
 
   return await inputApi.humanClick(options)
@@ -1173,6 +1436,22 @@ async function handleHumanDoubleClick() {
   } else {
     options.selector_type = humanSelectorType.value
     options.selector_value = humanSelectorValue.value
+
+    if (humanParentValue.value) {
+      options.parent_selector_type = humanParentType.value
+      options.parent_selector_value = humanParentValue.value
+    }
+
+    if (humanSiblingValue.value) {
+      options.sibling_selector_type = humanSiblingType.value
+      options.sibling_selector_value = humanSiblingValue.value
+      options.sibling_relation = humanSiblingRelation.value
+    }
+
+    if (humanOffsetX.value !== 0 || humanOffsetY.value !== 0) {
+      options.offset_x = humanOffsetX.value
+      options.offset_y = humanOffsetY.value
+    }
   }
 
   return await inputApi.humanDoubleClick(options)
@@ -1194,6 +1473,22 @@ async function handleHumanLongPress() {
   } else {
     options.selector_type = humanSelectorType.value
     options.selector_value = humanSelectorValue.value
+
+    if (humanParentValue.value) {
+      options.parent_selector_type = humanParentType.value
+      options.parent_selector_value = humanParentValue.value
+    }
+
+    if (humanSiblingValue.value) {
+      options.sibling_selector_type = humanSiblingType.value
+      options.sibling_selector_value = humanSiblingValue.value
+      options.sibling_relation = humanSiblingRelation.value
+    }
+
+    if (humanOffsetX.value !== 0 || humanOffsetY.value !== 0) {
+      options.offset_x = humanOffsetX.value
+      options.offset_y = humanOffsetY.value
+    }
   }
 
   return await inputApi.humanLongPress(options)
@@ -1263,10 +1558,59 @@ function generateSelectorDsl(selectorType, selectorValue) {
   return `${dslType}:${formatStringValue(selectorValue)}`
 }
 
+// 生成高级选择器 DSL（包含父级/兄弟/偏移）
+function generateAdvancedSelectorDsl(options) {
+  const { selectorType, selectorValue, parentType, parentValue, siblingType, siblingValue, siblingRelation, offsetX, offsetY } = options
+
+  if (!selectorValue) return null
+
+  const parts = []
+  const typeMap = {
+    'id': 'id',
+    'text': 'text',
+    'class': 'class',
+    'xpath': 'xpath'
+  }
+
+  const mainSelector = `${typeMap[selectorType] || 'id'}:${formatStringValue(selectorValue)}`
+  parts.push(mainSelector)
+
+  if (parentValue) {
+    const parentSelector = `${typeMap[parentType] || 'id'}:${formatStringValue(parentValue)}`
+    parts.push(`parent=${parentSelector}`)
+  }
+
+  if (siblingValue) {
+    const siblingSelector = `${typeMap[siblingType] || 'text'}:${formatStringValue(siblingValue)}`
+    if (siblingRelation !== 'following') {
+      parts.push(`sibling=${siblingSelector} sibling_relation=${siblingRelation}`)
+    } else {
+      parts.push(`sibling=${siblingSelector}`)
+    }
+  }
+
+  if (offsetX !== 0 || offsetY !== 0) {
+    if (offsetX !== 0) parts.push(`offset_x=${offsetX}`)
+    if (offsetY !== 0) parts.push(`offset_y=${offsetY}`)
+  }
+
+  return parts.join(' ')
+}
+
 // 点击元素 DSL
 const clickDsl = computed(() => {
   if (!clickLocateValue.value) return ''
-  const selector = generateSelectorDsl(clickLocateType.value, clickLocateValue.value)
+  const selector = generateAdvancedSelectorDsl({
+    selectorType: clickLocateType.value,
+    selectorValue: clickLocateValue.value,
+    parentType: clickParentType.value,
+    parentValue: clickParentValue.value,
+    siblingType: clickSiblingType.value,
+    siblingValue: clickSiblingValue.value,
+    siblingRelation: clickSiblingRelation.value,
+    offsetX: clickOffsetX.value,
+    offsetY: clickOffsetY.value
+  })
   if (!selector) return ''
   return `click ${selector}`
 })
@@ -1308,12 +1652,105 @@ const waitDsl = computed(() => {
   return `wait_element ${selector} ${waitTimeout.value}`
 })
 
+// 清除文本 DSL
+const clearDsl = computed(() => {
+  if (!textLocateValue.value) return ''
+  const selector = generateSelectorDsl(textLocateType.value, textLocateValue.value)
+  if (!selector) return ''
+  return `clear ${selector}`
+})
+
+// 发送动作 DSL
+const sendActionDsl = computed(() => {
+  if (!textLocateValue.value) return ''
+  const selector = generateSelectorDsl(textLocateType.value, textLocateValue.value)
+  if (!selector) return ''
+  const action = textAction.value || 'IME_ACTION_DONE'
+  return `send_action ${selector} ${formatStringValue(action)}`
+})
+
+// 等待元素消失 DSL
+const waitGoneDsl = computed(() => {
+  if (!waitLocateValue.value) return ''
+  const selector = generateSelectorDsl(waitLocateType.value, waitLocateValue.value)
+  if (!selector) return ''
+  return `wait_gone ${selector} ${waitTimeout.value}`
+})
+
+// 获取完整元素信息 DSL
+const getInfoDsl = computed(() => {
+  if (!infoLocateValue.value) return ''
+  const selector = generateSelectorDsl(infoLocateType.value, infoLocateValue.value)
+  if (!selector) return ''
+  return `set $info = get_info ${selector}`
+})
+
+// 查找元素 DSL（返回单个元素）
+const findElementDsl = computed(() => {
+  if (!locateValue.value) return ''
+  const selector = generateSelectorDsl(locateType.value, locateValue.value)
+  if (!selector) return ''
+  return `set $element = find_element ${selector}`
+})
+
+// 查找所有元素 DSL（返回元素列表）
+const findElementsDsl = computed(() => {
+  if (!locateValue.value) return ''
+  const selector = generateSelectorDsl(locateType.value, locateValue.value)
+  if (!selector) return ''
+  return `set $elements = find_elements ${selector}`
+})
+
+// 导航命令 DSL
+const navigationDsl = computed(() => {
+  return `# 导航命令\nback     # 返回\nhome     # 返回桌面\nmenu     # 打开菜单\nrecent   # 最近任务`
+})
+
+// 应用管理 DSL
+const appDsl = computed(() => {
+  const lines = ['# 应用管理']
+  lines.push(`start_app "com.example.app"    # 启动应用`)
+  lines.push(`stop_app "com.example.app"     # 停止应用`)
+  lines.push(`clear_app "com.example.app"    # 清除应用数据`)
+  return lines.join('\n')
+})
+
+// 坐标点击 DSL
+const coordinateDsl = computed(() => {
+  if (clickLocateValue.value) {
+    const coords = clickLocateValue.value.split(',')
+    if (coords.length === 2) {
+      const x = coords[0].trim()
+      const y = coords[1].trim()
+      if (!isNaN(x) && !isNaN(y)) {
+        return `click ${x}, ${y}`
+      }
+    }
+  }
+  return ''
+})
+
 // 元素信息 DSL
 const infoDsl = computed(() => {
   if (!infoLocateValue.value) return ''
   const selector = generateSelectorDsl(infoLocateType.value, infoLocateValue.value)
   if (!selector) return ''
-  return `# 获取元素文本\nset $text = get_text ${selector}`
+  return `# 元素信息获取示例
+
+# 获取元素文本
+set $text = get_text ${selector}
+
+# 获取元素完整信息（包含text、class、bounds等）
+set $info = get_info ${selector}
+
+# 查找单个元素（返回元素信息）
+set $element = find_element ${selector}
+
+# 查找所有匹配元素（返回元素列表）
+set $elements = find_elements ${selector}
+
+# 导出当前界面XML层次结构
+set $xml = dump_hierarchy`
 })
 
 // 屏幕控制 DSL
@@ -1324,12 +1761,10 @@ const screenDsl = computed(() => {
 // 人类模拟操作 DSL
 const humanDsl = computed(() => {
   const actionType = humanActionType.value
-  
+
   if (actionType === 'drag') {
-    // 拖拽操作
     const parts = ['human_drag']
-    
-    // 起点
+
     if (humanDragStartMode.value === 'coordinate') {
       if (humanDragStartX.value != null && humanDragStartY.value != null) {
         parts.push(`${humanDragStartX.value},${humanDragStartY.value}`)
@@ -1342,8 +1777,7 @@ const humanDsl = computed(() => {
     } else {
       return ''
     }
-    
-    // 终点
+
     if (humanDragEndMode.value === 'coordinate') {
       if (humanDragEndX.value != null && humanDragEndY.value != null) {
         parts.push(`${humanDragEndX.value},${humanDragEndY.value}`)
@@ -1356,8 +1790,7 @@ const humanDsl = computed(() => {
     } else {
       return ''
     }
-    
-    // 可选参数
+
     const options = []
     if (humanDragTrajectory.value !== 'bezier') {
       options.push(`trajectory=${humanDragTrajectory.value}`)
@@ -1368,31 +1801,79 @@ const humanDsl = computed(() => {
     if (humanDragDuration.value !== 1.0) {
       options.push(`duration=${humanDragDuration.value}`)
     }
-    
+    if (humanOffsetMin.value !== 3 || humanOffsetMax.value !== 10) {
+      options.push(`offset_min=${humanOffsetMin.value} offset_max=${humanOffsetMax.value}`)
+    }
+
     if (options.length > 0) {
       parts.push(options.join(' '))
     }
-    
+
     return parts.join(' ')
   } else {
-    // 点击/双击/长按
     const commandMap = {
       'click': 'human_click',
       'doubleClick': 'human_double_click',
       'longPress': 'human_long_press'
     }
     const command = commandMap[actionType]
-    
+
+    const parts = [command]
+
     if (humanTargetMode.value === 'coordinate') {
       if (humanTargetX.value != null && humanTargetY.value != null) {
-        return `${command} ${humanTargetX.value},${humanTargetY.value}`
+        parts.push(`${humanTargetX.value},${humanTargetY.value}`)
+      } else {
+        return ''
       }
-      return ''
     } else if (humanSelectorValue.value) {
-      const selector = generateSelectorDsl(humanSelectorType.value, humanSelectorValue.value)
-      return `${command} ${selector}`
+      const selectorParts = []
+      const typeMap = {
+        'id': 'id',
+        'text': 'text',
+        'class': 'class',
+        'xpath': 'xpath'
+      }
+      const mainSelector = `${typeMap[humanSelectorType.value] || 'id'}:${formatStringValue(humanSelectorValue.value)}`
+      selectorParts.push(mainSelector)
+
+      if (humanParentValue.value) {
+        const parentSelector = `${typeMap[humanParentType.value] || 'id'}:${formatStringValue(humanParentValue.value)}`
+        selectorParts.push(`parent=${parentSelector}`)
+      }
+
+      if (humanSiblingValue.value) {
+        const siblingSelector = `${typeMap[humanSiblingType.value] || 'text'}:${formatStringValue(humanSiblingValue.value)}`
+        if (humanSiblingRelation.value !== 'following') {
+          selectorParts.push(`sibling=${siblingSelector} sibling_relation=${humanSiblingRelation.value}`)
+        } else {
+          selectorParts.push(`sibling=${siblingSelector}`)
+        }
+      }
+
+      if (humanOffsetX.value !== 0 || humanOffsetY.value !== 0) {
+        if (humanOffsetX.value !== 0) selectorParts.push(`offset_x=${humanOffsetX.value}`)
+        if (humanOffsetY.value !== 0) selectorParts.push(`offset_y=${humanOffsetY.value}`)
+      }
+
+      parts.push(selectorParts.join(' '))
+    } else {
+      return ''
     }
-    return ''
+
+    const options = []
+    if (humanOffsetMin.value !== 3 || humanOffsetMax.value !== 10) {
+      options.push(`offset_min=${humanOffsetMin.value} offset_max=${humanOffsetMax.value}`)
+    }
+    if (humanDelayMin.value !== 0.05 || humanDelayMax.value !== 0.3) {
+      options.push(`delay_min=${humanDelayMin.value} delay_max=${humanDelayMax.value}`)
+    }
+
+    if (options.length > 0) {
+      parts.push(options.join(' '))
+    }
+
+    return parts.join(' ')
   }
 })
 
@@ -1401,10 +1882,19 @@ const currentDslScript = computed(() => {
   const dslMap = {
     'click': clickDsl.value,
     'text': textDsl.value,
+    'clear': clearDsl.value,
+    'sendAction': sendActionDsl.value,
     'swipe': swipeDsl.value,
     'locate': locateDsl.value,
     'wait': waitDsl.value,
+    'waitGone': waitGoneDsl.value,
     'info': infoDsl.value,
+    'getInfo': getInfoDsl.value,
+    'findElement': findElementDsl.value,
+    'findElements': findElementsDsl.value,
+    'coordinate': coordinateDsl.value,
+    'navigation': navigationDsl.value,
+    'app': appDsl.value,
     'screen': screenDsl.value,
     'human': humanDsl.value
   }
@@ -1417,6 +1907,94 @@ function copyDslScript() {
   navigator.clipboard.writeText(currentDslScript.value)
   ElMessage.success('DSL 脚本已复制到剪贴板')
 }
+
+// ============ 屏幕预览事件处理 ============
+
+function handleCoordinateClick(coordinate) {
+  console.log('Coordinate clicked:', coordinate)
+  
+  if (activeTab.value === 'click') {
+    clickLocateValue.value = `${coordinate.x}, ${coordinate.y}`
+    ElMessage.success(`已将坐标 ${coordinate.x}, ${coordinate.y} 填入点击位置`)
+  } else if (activeTab.value === 'human') {
+    if (humanActionType.value === 'drag') {
+      if (!humanDragStartX.value || !humanDragStartY.value) {
+        humanDragStartX.value = coordinate.x
+        humanDragStartY.value = coordinate.y
+        ElMessage.success(`已将起点坐标设置为 ${coordinate.x}, ${coordinate.y}`)
+        
+        // 起点标记动画
+        if (screenPreviewRef.value) {
+          screenPreviewRef.value.addClickMarker(coordinate.x, coordinate.y, 'click')
+        }
+      } else {
+        humanDragEndX.value = coordinate.x
+        humanDragEndY.value = coordinate.y
+        humanDragEndMode.value = 'coordinate'
+        ElMessage.success(`已将终点坐标设置为 ${coordinate.x}, ${coordinate.y}`)
+        
+        // 终点标记动画
+        if (screenPreviewRef.value) {
+          screenPreviewRef.value.addClickMarker(coordinate.x, coordinate.y, 'long-press')
+        }
+        
+        // 触发拖拽预览动画
+        if (screenPreviewRef.value && 
+            humanDragStartX.value && 
+            humanDragStartY.value &&
+            humanDragEndX.value && 
+            humanDragEndY.value) {
+          
+          screenPreviewRef.value.showDragPreview(
+            humanDragStartX.value,
+            humanDragStartY.value,
+            humanDragEndX.value,
+            humanDragEndY.value,
+            {
+              trajectoryType: humanDragTrajectory.value,
+              duration: humanDragDuration.value * 1000,
+              speedMode: humanDragSpeedMode.value,
+              numPoints: humanDragNumPoints.value
+            }
+          )
+        }
+      }
+    } else {
+      humanTargetX.value = coordinate.x
+      humanTargetY.value = coordinate.y
+      humanTargetMode.value = 'coordinate'
+      ElMessage.success(`已将目标坐标设置为 ${coordinate.x}, ${coordinate.y}`)
+      
+      // 点击标记动画
+      if (screenPreviewRef.value) {
+        screenPreviewRef.value.addClickMarker(coordinate.x, coordinate.y, 'click')
+      }
+    }
+  }
+}
+
+function handleCoordinateUpdate(coordinate) {
+  console.log('Coordinate updated:', coordinate)
+}
+
+// 监听拖拽模式，自动切换到坐标模式
+watch(humanDragStartMode, (newVal) => {
+  if (newVal === 'coordinate') {
+    humanDragStartSelectorValue.value = ''
+  }
+})
+
+watch(humanDragEndMode, (newVal) => {
+  if (newVal === 'coordinate') {
+    humanDragEndSelectorValue.value = ''
+  }
+})
+
+watch(humanTargetMode, (newVal) => {
+  if (newVal === 'coordinate') {
+    humanSelectorValue.value = ''
+  }
+})
 </script>
 
 <style scoped>

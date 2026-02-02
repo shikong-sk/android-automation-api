@@ -5,6 +5,7 @@
 """
 
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -239,6 +240,35 @@ class ScriptExecutor:
             return self.context.variables[value]
         return value
 
+    def _interpolate_variables(self, value: Any) -> Any:
+        """
+        解析字符串中的变量插值
+
+        支持 ${variable} 语法，例如：
+        - "Hello ${name}" -> "Hello World" （如果 name="World"）
+        - "${x} + ${y}" -> "10 + 20" （如果 x=10, y=20）
+
+        Args:
+            value: 原始值（字符串）
+
+        Returns:
+            插值后的字符串
+        """
+        if not self.context or not isinstance(value, str):
+            return value
+
+        variables = self.context.variables if self.context.variables else {}
+        pattern = r'\$\{([^}]+)\}'
+
+        def replace_match(match):
+            var_name = match.group(1)
+            if var_name in variables:
+                var_value = variables[var_name]
+                return str(var_value) if var_value is not None else ""
+            return match.group(0)
+
+        return re.sub(pattern, replace_match, value)
+
     def _get_element(self, selector_type: Optional[str], selector_value: Optional[str]):
         """
         根据选择器获取元素
@@ -253,7 +283,7 @@ class ScriptExecutor:
         if not selector_type or not selector_value:
             return None
 
-        selector_value = self._resolve_value(selector_value)
+        selector_value = self._interpolate_variables(self._resolve_value(selector_value))
 
         if selector_value is None:
             return None
@@ -279,7 +309,7 @@ class ScriptExecutor:
             命令执行结果
         """
         command = node.command.lower()
-        args = [self._resolve_value(arg) for arg in node.args]
+        args = [self._interpolate_variables(self._resolve_value(arg)) for arg in node.args]
 
         self.log(f"Executing: {command} {args}")
 
@@ -548,7 +578,7 @@ class ScriptExecutor:
             value = self.execute_command(cmd_node)
         else:
             # 直接赋值
-            value = self._resolve_value(node.value)
+            value = self._interpolate_variables(self._resolve_value(node.value))
 
         self.context.variables[variable] = value
         self.log(f"Set {variable} = {value}")
@@ -736,7 +766,7 @@ class ScriptExecutor:
             条件评估结果
         """
         command = cond.command.lower() if cond.command else ""
-        args = [self._resolve_value(arg) for arg in cond.args]
+        args = [self._interpolate_variables(self._resolve_value(arg)) for arg in cond.args]
 
         result = False
 
@@ -804,7 +834,7 @@ class ScriptExecutor:
         Returns:
             Dict: 元素信息字典
         """
-        selector_value = self._resolve_value(selector_value)
+        selector_value = self._interpolate_variables(self._resolve_value(selector_value))
         element = self._get_element(selector_type, selector_value)
 
         if element and element.exists:
@@ -833,7 +863,7 @@ class ScriptExecutor:
         Returns:
             List[Dict]: 元素信息列表
         """
-        selector_value = self._resolve_value(selector_value)
+        selector_value = self._interpolate_variables(self._resolve_value(selector_value))
         elements = []
 
         if selector_type == "id":
@@ -902,6 +932,8 @@ class ScriptExecutor:
                 key, value = arg.split("=", 1)
                 key = key.strip()
                 value = value.strip()
+                # 应用变量插值
+                value = self._interpolate_variables(value)
                 # 尝试转换为数字
                 try:
                     if "." in value:
@@ -942,7 +974,7 @@ class ScriptExecutor:
         # 从选择器获取目标
         if node.selector_type and node.selector_value:
             options["selector_type"] = node.selector_type
-            options["selector_value"] = self._resolve_value(node.selector_value)
+            options["selector_value"] = self._interpolate_variables(self._resolve_value(node.selector_value))
 
         # 设置默认值
         offset_range = (options.get("offset_min", 3), options.get("offset_max", 10))
@@ -979,7 +1011,7 @@ class ScriptExecutor:
 
         if node.selector_type and node.selector_value:
             options["selector_type"] = node.selector_type
-            options["selector_value"] = self._resolve_value(node.selector_value)
+            options["selector_value"] = self._interpolate_variables(self._resolve_value(node.selector_value))
 
         offset_range = (options.get("offset_min", 3), options.get("offset_max", 8))
         interval_range = (options.get("interval_min", 0.1), options.get("interval_max", 0.2))
@@ -1015,7 +1047,7 @@ class ScriptExecutor:
 
         if node.selector_type and node.selector_value:
             options["selector_type"] = node.selector_type
-            options["selector_value"] = self._resolve_value(node.selector_value)
+            options["selector_value"] = self._interpolate_variables(self._resolve_value(node.selector_value))
 
         duration_range = (options.get("duration_min", 0.8), options.get("duration_max", 1.5))
         offset_range = (options.get("offset_min", 3), options.get("offset_max", 10))
@@ -1068,7 +1100,7 @@ class ScriptExecutor:
         # 从选择器获取起点（如果有）
         if node.selector_type and node.selector_value:
             options["start_selector_type"] = node.selector_type
-            options["start_selector_value"] = self._resolve_value(node.selector_value)
+            options["start_selector_value"] = self._interpolate_variables(self._resolve_value(node.selector_value))
 
         # 解析轨迹和速度参数
         trajectory_type = options.get("trajectory", "bezier")

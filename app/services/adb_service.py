@@ -9,6 +9,7 @@ ADB 服务模块
 - 获取设备属性
 """
 
+import base64
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from adbutils import AdbClient, AdbDevice
@@ -367,6 +368,35 @@ class AdbService:
             return True
         except Exception:
             return False
+
+    def take_screenshot_base64(self) -> Dict[str, Any]:
+        """
+        截取屏幕截图并返回 base64 编码
+
+        Returns:
+            Dict: 包含 base64 图片数据和屏幕尺寸
+                - image: base64 编码的图片数据 (data:image/png;base64,...)
+                - width: 屏幕宽度
+                - height: 屏幕高度
+        """
+        try:
+            # 使用 screencap -p 直接获取 PNG 数据
+            # encoding=None 返回原始字节数据
+            png_data = self._device.shell("screencap -p", encoding=None)
+            
+            # 转换为 base64
+            base64_data = base64.b64encode(png_data).decode("utf-8")
+            
+            # 获取屏幕尺寸
+            resolution = self.get_screen_resolution()
+            
+            return {
+                "image": f"data:image/png;base64,{base64_data}",
+                "width": resolution.get("width", 0),
+                "height": resolution.get("height", 0),
+            }
+        except Exception as e:
+            return {"error": str(e), "image": None, "width": 0, "height": 0}
 
     def reboot(self, mode: Optional[str] = None) -> bool:
         """

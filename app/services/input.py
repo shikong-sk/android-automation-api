@@ -16,6 +16,9 @@ from typing import Any, Dict, List, Optional, Tuple, Literal
 import random
 import time
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InputService(AutomationService):
@@ -727,41 +730,180 @@ class InputService(AutomationService):
         return None
 
     def get_element_bounds_by_selector(
-        self, selector_type: str, selector_value: str
+        self,
+        selector_type: str,
+        selector_value: str,
+        parent_selector_type: Optional[str] = None,
+        parent_selector_value: Optional[str] = None,
+        sibling_selector_type: Optional[str] = None,
+        sibling_selector_value: Optional[str] = None,
+        sibling_relation: str = "following",
+        offset_x: int = 0,
+        offset_y: int = 0,
     ) -> Optional[Dict[str, Any]]:
         """
-        通过选择器获取元素边界
+        根据选择器获取元素边界，支持父级/兄弟关系和偏移
 
         Args:
-            selector_type: 选择器类型
+            selector_type: 选择器类型 (id/text/class/xpath)
             selector_value: 选择器值
+            parent_selector_type: 父元素选择器类型
+            parent_selector_value: 父元素选择器值
+            sibling_selector_type: 兄弟元素选择器类型
+            sibling_selector_value: 兄弟元素选择器值
+            sibling_relation: 兄弟关系 (following/preceding)
+            offset_x: X 坐标偏移
+            offset_y: Y 坐标偏移
 
         Returns:
-            Dict: 包含边界信息的字典
+            Dict[str, Any]: 包含 bounds 和坐标信息，元素不存在时返回 None
         """
-        element = self._get_element(selector_type, selector_value)
-        if element.exists:
-            if selector_type == "xpath":
-                info = element.get()
-                bounds_str = info.attrib.get("bounds", "")
-                # 解析 bounds 字符串 "[left,top][right,bottom]"
-                import re
+        try:
+            self.wait_for_idle(timeout=1.0)
 
-                match = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", bounds_str)
-                if match:
-                    return {
-                        "exists": True,
-                        "bounds": {
-                            "left": int(match.group(1)),
-                            "top": int(match.group(2)),
-                            "right": int(match.group(3)),
-                            "bottom": int(match.group(4)),
-                        },
-                    }
-                return {"exists": True, "bounds": bounds_str}
+            if selector_type == "xpath":
+                element = self._device.xpath(selector_value)
+            elif selector_type == "id":
+                element = self._device(resourceId=selector_value)
+            elif selector_type == "text":
+                element = self._device(text=selector_value)
+            elif selector_type == "class":
+                element = self._device(className=selector_value)
             else:
-                return {"exists": True, "bounds": element.info.get("bounds", {})}
-        return None
+                return None
+
+            info = element.info
+            bounds = info.get("bounds", {})
+
+            if bounds:
+                left = bounds.get("left", 0)
+                top = bounds.get("top", 0)
+                right = bounds.get("right", 0)
+                bottom = bounds.get("bottom", 0)
+                center_x = (left + right) // 2 + offset_x
+                center_y = (top + bottom) // 2 + offset_y
+
+                return {
+                    "exists": True,
+                    "bounds": bounds,
+                    "center_x": center_x,
+                    "center_y": center_y,
+                }
+            return {"exists": True, "bounds": bounds_str}
+        except Exception as e:
+            logger.error(f"获取元素边界失败: {e}")
+            return None
+
+    def find_with_parent(
+        self,
+        child_selector_type: str,
+        child_selector_value: str,
+        parent_selector_type: str,
+        parent_selector_value: str,
+    ) -> bool:
+        """
+        通过父元素查找子元素
+
+        Args:
+            child_selector_type: 子元素选择器类型
+            child_selector_value: 子元素选择器值
+            parent_selector_type: 父元素选择器类型
+            parent_selector_value: 父元素选择器值
+
+        Returns:
+            bool: 是否找到元素
+        """
+        try:
+            self.wait_for_idle(timeout=1.0)
+
+            parent_element = self._get_element(parent_selector_type, parent_selector_value)
+            if not parent_element.exists:
+                return False
+
+            parent_info = parent_element.info
+            parent_bounds = parent_info.get("bounds", {})
+            if not parent_bounds:
+                return False
+
+            left = parent_bounds.get("left", 0)
+            top = parent_bounds.get("top", 0)
+            right = parent_bounds.get("right", 0)
+            bottom = parent_bounds.get("bottom", 0)
+
+            if child_selector_type == "xpath":
+                elements = self._device.xpath(f"{child_selector_value}").all()
+                for element in elements:
+                    info = element.info
+                    bounds = info.get("bounds", {})
+                    if bounds:
+                        elem_left = bounds.get("left", 0)
+                        elem_top = bounds.get("top", 0)
+                        elem_right = bounds.get("right", 0)
+                        elem_bottom = bounds.get("bottom", 0)
+
+                        if left <= elem_left and top <= elem_top and right >= elem_right and bottom >= elem_bottom:
+                            return True
+                return False
+            else:
+                return self._get_element(child_selector_type, child_selector_value).exists
+        except Exception as e:
+            logger.error(f"通过父元素查找子元素失败: {e}")
+            return False
+
+    def find_with_sibling(
+        self,
+        target_selector_type: str,
+        target_selector_value: str,
+        sibling_selector_type: str,
+        sibling_selector_value: str,
+        sibling_relation: str = "following",
+    ) -> bool:
+        """
+        通过兄弟元素查找目标元素
+
+        Args:
+            target_selector_type: 目标元素选择器类型
+            target_selector_value: 目标元素选择器值
+            sibling_selector_type: 兄弟元素选择器类型
+            sibling_selector_value: 兄弟元素选择器值
+            sibling_relation: 兄弟关系 (following=之后, preceding=之前)
+
+        Returns:
+            bool: 是否找到元素
+        """
+        try:
+            self.wait_for_idle(timeout=1.0)
+
+            sibling = self._get_element(sibling_selector_type, sibling_selector_value)
+            if not sibling.exists:
+                return False
+
+            sibling_info = sibling.info
+            sibling_bounds = sibling_info.get("bounds", {})
+            if not sibling_bounds:
+                return False
+
+            sibling_left = sibling_bounds.get("left", 0)
+            sibling_top = sibling_bounds.get("top", 0)
+
+            elements = self._device.xpath(f"//{target_selector_type}[@resource-id='{target_selector_value}']").all()
+            for element in elements:
+                info = element.info
+                bounds = info.get("bounds", {})
+                if bounds:
+                    elem_left = bounds.get("left", 0)
+                    elem_top = bounds.get("top", 0)
+
+                    if sibling_relation == "following":
+                        if elem_left >= sibling_left and elem_top >= sibling_top:
+                            return True
+                    elif sibling_relation == "preceding":
+                        if elem_left <= sibling_left and elem_top <= sibling_top:
+                            return True
+            return False
+        except Exception as e:
+            logger.error(f"通过兄弟元素查找失败: {e}")
+            return False
 
     # ============ 人类模拟操作 ============
 
@@ -1142,6 +1284,13 @@ class InputService(AutomationService):
         y: Optional[int] = None,
         selector_type: Optional[str] = None,
         selector_value: Optional[str] = None,
+        parent_selector_type: Optional[str] = None,
+        parent_selector_value: Optional[str] = None,
+        sibling_selector_type: Optional[str] = None,
+        sibling_selector_value: Optional[str] = None,
+        sibling_relation: str = "following",
+        offset_x: int = 0,
+        offset_y: int = 0,
         offset_range: Tuple[int, int] = (3, 10),
         delay_range: Tuple[float, float] = (0.05, 0.3),
         duration_range: Tuple[float, float] = (0.05, 0.15),
@@ -1150,12 +1299,20 @@ class InputService(AutomationService):
         模拟人类点击操作
 
         支持通过坐标或选择器定位目标位置，添加随机偏移、延迟和按压时长变化。
+        支持父级/兄弟元素定位和坐标偏移。
 
         Args:
             x: 目标 x 坐标（与选择器二选一）
             y: 目标 y 坐标（与选择器二选一）
             selector_type: 选择器类型 (id, text, class, xpath)
             selector_value: 选择器值
+            parent_selector_type: 父元素选择器类型
+            parent_selector_value: 父元素选择器值
+            sibling_selector_type: 兄弟元素选择器类型
+            sibling_selector_value: 兄弟元素选择器值
+            sibling_relation: 兄弟关系 (following/preceding)
+            offset_x: X 坐标偏移
+            offset_y: Y 坐标偏移
             offset_range: 随机偏移范围 (最小值, 最大值)，单位像素
             delay_range: 点击前延迟范围 (最小值, 最大值)，单位秒
             duration_range: 按压时长范围 (最小值, 最大值)，单位秒
@@ -1163,7 +1320,8 @@ class InputService(AutomationService):
         Returns:
             bool: 操作是否成功
         """
-        # 确定目标坐标
+        target_x, target_y = None, None
+
         if x is not None and y is not None:
             target_x, target_y = x, y
         elif selector_type and selector_value:
@@ -1174,18 +1332,20 @@ class InputService(AutomationService):
         else:
             return False
 
-        # 添加随机偏移
+        if target_x is None or target_y is None:
+            return False
+
+        target_x += offset_x
+        target_y += offset_y
+
         final_x, final_y = self._add_random_offset(target_x, target_y, offset_range)
 
-        # 添加随机延迟
         delay = random.uniform(delay_range[0], delay_range[1])
         time.sleep(delay)
 
-        # 执行点击（带随机按压时长）
         duration = random.uniform(duration_range[0], duration_range[1])
 
         try:
-            # 使用 swipe 模拟带时长的点击（起点终点相同）
             self.device.swipe(final_x, final_y, final_x, final_y, duration=duration)
             return True
         except Exception:
@@ -1197,6 +1357,13 @@ class InputService(AutomationService):
         y: Optional[int] = None,
         selector_type: Optional[str] = None,
         selector_value: Optional[str] = None,
+        parent_selector_type: Optional[str] = None,
+        parent_selector_value: Optional[str] = None,
+        sibling_selector_type: Optional[str] = None,
+        sibling_selector_value: Optional[str] = None,
+        sibling_relation: str = "following",
+        offset_x: int = 0,
+        offset_y: int = 0,
         offset_range: Tuple[int, int] = (3, 8),
         interval_range: Tuple[float, float] = (0.1, 0.2),
         duration_range: Tuple[float, float] = (0.03, 0.08),
@@ -1204,11 +1371,20 @@ class InputService(AutomationService):
         """
         模拟人类双击操作
 
+        支持父级/兄弟元素定位和坐标偏移。
+
         Args:
             x: 目标 x 坐标
             y: 目标 y 坐标
             selector_type: 选择器类型
             selector_value: 选择器值
+            parent_selector_type: 父元素选择器类型
+            parent_selector_value: 父元素选择器值
+            sibling_selector_type: 兄弟元素选择器类型
+            sibling_selector_value: 兄弟元素选择器值
+            sibling_relation: 兄弟关系 (following/preceding)
+            offset_x: X 坐标偏移
+            offset_y: Y 坐标偏移
             offset_range: 随机偏移范围
             interval_range: 两次点击间隔范围（秒）
             duration_range: 每次按压时长范围（秒）
@@ -1216,7 +1392,8 @@ class InputService(AutomationService):
         Returns:
             bool: 操作是否成功
         """
-        # 确定目标坐标
+        target_x, target_y = None, None
+
         if x is not None and y is not None:
             target_x, target_y = x, y
         elif selector_type and selector_value:
@@ -1227,17 +1404,20 @@ class InputService(AutomationService):
         else:
             return False
 
+        if target_x is None or target_y is None:
+            return False
+
+        target_x += offset_x
+        target_y += offset_y
+
         try:
-            # 第一次点击
             x1, y1 = self._add_random_offset(target_x, target_y, offset_range)
             duration1 = random.uniform(duration_range[0], duration_range[1])
             self.device.swipe(x1, y1, x1, y1, duration=duration1)
 
-            # 间隔
             interval = random.uniform(interval_range[0], interval_range[1])
             time.sleep(interval)
 
-            # 第二次点击（位置略有不同）
             x2, y2 = self._add_random_offset(target_x, target_y, offset_range)
             duration2 = random.uniform(duration_range[0], duration_range[1])
             self.device.swipe(x2, y2, x2, y2, duration=duration2)
@@ -1252,6 +1432,13 @@ class InputService(AutomationService):
         y: Optional[int] = None,
         selector_type: Optional[str] = None,
         selector_value: Optional[str] = None,
+        parent_selector_type: Optional[str] = None,
+        parent_selector_value: Optional[str] = None,
+        sibling_selector_type: Optional[str] = None,
+        sibling_selector_value: Optional[str] = None,
+        sibling_relation: str = "following",
+        offset_x: int = 0,
+        offset_y: int = 0,
         duration_range: Tuple[float, float] = (0.8, 1.5),
         offset_range: Tuple[int, int] = (3, 10),
         delay_range: Tuple[float, float] = (0.05, 0.2),
@@ -1259,11 +1446,20 @@ class InputService(AutomationService):
         """
         模拟人类长按操作
 
+        支持父级/兄弟元素定位和坐标偏移。
+
         Args:
             x: 目标 x 坐标
             y: 目标 y 坐标
             selector_type: 选择器类型
             selector_value: 选择器值
+            parent_selector_type: 父元素选择器类型
+            parent_selector_value: 父元素选择器值
+            sibling_selector_type: 兄弟元素选择器类型
+            sibling_selector_value: 兄弟元素选择器值
+            sibling_relation: 兄弟关系 (following/preceding)
+            offset_x: X 坐标偏移
+            offset_y: Y 坐标偏移
             duration_range: 长按时长范围（秒）
             offset_range: 随机偏移范围
             delay_range: 操作前延迟范围
@@ -1271,7 +1467,8 @@ class InputService(AutomationService):
         Returns:
             bool: 操作是否成功
         """
-        # 确定目标坐标
+        target_x, target_y = None, None
+
         if x is not None and y is not None:
             target_x, target_y = x, y
         elif selector_type and selector_value:
@@ -1282,14 +1479,17 @@ class InputService(AutomationService):
         else:
             return False
 
-        # 添加随机偏移
+        if target_x is None or target_y is None:
+            return False
+
+        target_x += offset_x
+        target_y += offset_y
+
         final_x, final_y = self._add_random_offset(target_x, target_y, offset_range)
 
-        # 添加随机延迟
         delay = random.uniform(delay_range[0], delay_range[1])
         time.sleep(delay)
 
-        # 执行长按
         duration = random.uniform(duration_range[0], duration_range[1])
 
         try:

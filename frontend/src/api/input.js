@@ -74,9 +74,42 @@ export const inputApi = {
     })
   },
 
-  getElementBoundsBySelector(selectorType, selectorValue) {
-    return request.get('/input/bounds-by-selector', { 
-      params: { selector_type: selectorType, selector_value: selectorValue } 
+  getElementBoundsBySelector(selectorType, selectorValue, options = {}) {
+    return request.get('/input/bounds-by-selector', {
+      params: {
+        selector_type: selectorType,
+        selector_value: selectorValue,
+        parent_selector_type: options.parent_selector_type || null,
+        parent_selector_value: options.parent_selector_value || null,
+        sibling_selector_type: options.sibling_selector_type || null,
+        sibling_selector_value: options.sibling_selector_value || null,
+        sibling_relation: options.sibling_relation || 'following',
+        offset_x: options.offset_x || 0,
+        offset_y: options.offset_y || 0
+      }
+    })
+  },
+
+  findWithParent(childSelectorType, childSelectorValue, parentSelectorType, parentSelectorValue) {
+    return request.get('/input/find-with-parent', {
+      params: {
+        child_selector_type: childSelectorType,
+        child_selector_value: childSelectorValue,
+        parent_selector_type: parentSelectorType,
+        parent_selector_value: parentSelectorValue
+      }
+    })
+  },
+
+  findWithSibling(targetSelectorType, targetSelectorValue, siblingSelectorType, siblingSelectorValue, siblingRelation = 'following') {
+    return request.get('/input/find-with-sibling', {
+      params: {
+        target_selector_type: targetSelectorType,
+        target_selector_value: targetSelectorValue,
+        sibling_selector_type: siblingSelectorType,
+        sibling_selector_value: siblingSelectorValue,
+        sibling_relation: siblingRelation
+      }
     })
   },
 
@@ -157,6 +190,13 @@ export const inputApi = {
    * @param {number} [options.y] - 目标 y 坐标
    * @param {string} [options.selector_type] - 选择器类型: id, text, class, xpath
    * @param {string} [options.selector_value] - 选择器值
+   * @param {string} [options.parent_selector_type] - 父元素选择器类型
+   * @param {string} [options.parent_selector_value] - 父元素选择器值
+   * @param {string} [options.sibling_selector_type] - 兄弟元素选择器类型
+   * @param {string} [options.sibling_selector_value] - 兄弟元素选择器值
+   * @param {string} [options.sibling_relation] - 兄弟关系: following(之后), preceding(之前)
+   * @param {number} [options.offset_x] - X 坐标偏移
+   * @param {number} [options.offset_y] - Y 坐标偏移
    * @param {number} [options.offset_min=3] - 随机偏移最小值
    * @param {number} [options.offset_max=10] - 随机偏移最大值
    * @param {number} [options.delay_min=0.05] - 点击前延迟最小值（秒）
@@ -175,6 +215,13 @@ export const inputApi = {
    * @param {number} [options.y] - 目标 y 坐标
    * @param {string} [options.selector_type] - 选择器类型
    * @param {string} [options.selector_value] - 选择器值
+   * @param {string} [options.parent_selector_type] - 父元素选择器类型
+   * @param {string} [options.parent_selector_value] - 父元素选择器值
+   * @param {string} [options.sibling_selector_type] - 兄弟元素选择器类型
+   * @param {string} [options.sibling_selector_value] - 兄弟元素选择器值
+   * @param {string} [options.sibling_relation] - 兄弟关系: following(之后), preceding(之前)
+   * @param {number} [options.offset_x] - X 坐标偏移
+   * @param {number} [options.offset_y] - Y 坐标偏移
    * @param {number} [options.offset_min=3] - 随机偏移最小值
    * @param {number} [options.offset_max=8] - 随机偏移最大值
    * @param {number} [options.interval_min=0.1] - 两次点击间隔最小值（秒）
@@ -193,6 +240,13 @@ export const inputApi = {
    * @param {number} [options.y] - 目标 y 坐标
    * @param {string} [options.selector_type] - 选择器类型
    * @param {string} [options.selector_value] - 选择器值
+   * @param {string} [options.parent_selector_type] - 父元素选择器类型
+   * @param {string} [options.parent_selector_value] - 父元素选择器值
+   * @param {string} [options.sibling_selector_type] - 兄弟元素选择器类型
+   * @param {string} [options.sibling_selector_value] - 兄弟元素选择器值
+   * @param {string} [options.sibling_relation] - 兄弟关系: following(之后), preceding(之前)
+   * @param {number} [options.offset_x] - X 坐标偏移
+   * @param {number} [options.offset_y] - Y 坐标偏移
    * @param {number} [options.duration_min=0.8] - 长按时长最小值（秒）
    * @param {number} [options.duration_max=1.5] - 长按时长最大值（秒）
    * @param {number} [options.offset_min=3] - 随机偏移最小值

@@ -1,0 +1,310 @@
+# 登录自动化脚本
+# =================
+# 演示完整的登录流程自动化
+# 包含：错误处理、凭据管理、结果验证、重试机制
+
+log "=== 开始登录自动化 ==="
+
+# ================= 配置区域 =================
+# 测试账号配置（使用变量便于管理）
+set $test_username = "test@example.com"
+set $test_password = "password123"
+set $app_package = "com.example.app"
+
+# 重试配置
+set $max_login_attempts = 3
+set $login_retry_delay = 2
+
+# 调试配置
+set $enable_screenshot = true
+
+log "配置加载完成"
+log "目标应用: ${app_package}"
+log "用户名: ${test_username}"
+log "最大登录尝试次数: ${max_login_attempts}"
+
+# ================= 步骤 1: 启动应用 =================
+log "步骤 1: 启动应用"
+
+try
+    start_app "${app_package}"
+    log "应用启动命令已发送"
+catch
+    log "✗ 应用启动失败"
+    shell "screencap -p /sdcard/error_start_app.png"
+    exit 1
+end
+
+# 等待应用启动
+log "等待应用启动 (3秒)..."
+wait 3
+
+# ================= 步骤 2: 验证登录页面 =================
+log "步骤 2: 验证登录页面"
+
+# 检查是否在登录页面（通过检查用户名输入框）
+set $username_field = get_info id:"username"
+set $password_field = get_info id:"password"
+set $login_button = get_info id:"login_button"
+
+if $username_field.exists and $password_field.exists
+    log "✓ 检测到登录页面（输入框存在）"
+else
+    log "✗ 未检测到标准登录页面"
+
+    # 检查是否已登录
+    if exists id:"welcome_message"
+        log "用户已登录，跳过登录流程"
+        exit 0
+    end
+
+    # 检查当前页面状态
+    log "检查当前页面状态..."
+    set $hierarchy = dump_hierarchy
+    log "当前界面结构已导出"
+
+    # 尝试返回主页后重新启动
+    log "尝试返回主页后重新启动..."
+    home
+    wait 1
+    start_app "${app_package}"
+    wait 3
+
+    # 再次检查
+    if not exists id:"username"
+        log "✗ 仍然无法找到登录页面，脚本终止"
+        shell "screencap -p /sdcard/error_no_login_page.png"
+        exit 1
+    end
+end
+
+# ================= 步骤 3: 输入凭据 =================
+log "步骤 3: 输入账号密码"
+
+# 清空输入框（如果有预填内容）
+if exists id:"username"
+    clear id:"username"
+    wait 0.3
+end
+
+if exists id:"password"
+    clear id:"password"
+    wait 0.3
+end
+
+# 输入用户名
+log "输入用户名: ${test_username}"
+input id:"username" "${test_username}"
+wait 0.5
+
+# 输入密码
+log "输入密码: [已隐藏]"
+input id:"password" "${test_password}"
+wait 0.5
+
+# 验证输入是否成功
+set $username_value = get_text id:"username"
+set $password_value = get_text id:"password"
+
+if $username_value == $test_username
+    log "✓ 用户名输入成功"
+else
+    log "✗ 用户名输入可能失败，实际值: $username_value"
+end
+
+# ================= 步骤 4: 点击登录按钮 =================
+log "步骤 4: 点击登录按钮"
+
+# 检查登录按钮状态
+if exists id:"login_button"
+    set $btn_info = get_info id:"login_button"
+
+    if $btn_info.enabled and $btn_info.clickable
+        log "登录按钮可用，点击登录"
+        click id:"login_button"
+    else
+        log "登录按钮不可用，可能被禁用或遮挡"
+        log "按钮状态 - enabled: $btn_info.enabled, clickable: $btn_info.clickable"
+
+        # 尝试其他方式定位登录按钮
+        if exists text:"登录"
+            log "通过文本定位登录按钮"
+            click text:"登录"
+        elif exists text:"登 录"
+            log "通过文本'登 录'定位"
+            click text:"登 录"
+        else
+            log "✗ 无法找到可点击的登录按钮"
+            exit 1
+        end
+    end
+else
+    log "✗ 未找到登录按钮"
+    exit 1
+end
+
+# ================= 步骤 5: 等待登录结果 =================
+log "步骤 5: 等待登录结果"
+
+# 等待登录处理（通常需要 2-5 秒）
+log "等待登录处理 (3秒)..."
+wait 3
+
+# ================= 步骤 6: 验证登录结果 =================
+log "步骤 6: 验证登录结果"
+
+# 方法 1: 检查欢迎消息
+if exists id:"welcome_message"
+    set $welcome_text = get_text id:"welcome_message"
+    log "✓ 登录成功! 欢迎信息: $welcome_text"
+
+    # 登录成功，跳过后续重试逻辑
+    set $login_success = true
+elif exists text:"欢迎"
+    log "✓ 登录成功! 检测到欢迎文本"
+    set $login_success = true
+else
+    log "未检测到欢迎消息，检查登录状态..."
+
+    # 方法 2: 检查错误消息
+    if exists id:"error_message"
+        set $error_text = get_text id:"error_message"
+        log "✗ 登录失败: $error_text"
+        set $login_success = false
+        set $error_type = "credential_error"
+    elif exists text:"密码错误"
+        log "✗ 登录失败: 密码错误"
+        set $login_success = false
+        set $error_type = "wrong_password"
+    elif exists text:"账号不存在"
+        log "✗ 登录失败: 账号不存在"
+        set $login_success = false
+        set $error_type = "account_not_found"
+    elif exists text:"网络错误"
+        log "✗ 登录失败: 网络错误"
+        set $login_success = false
+        set $error_type = "network_error"
+    else
+        # 方法 3: 检查是否仍在登录页面
+        if exists id:"login_button"
+            log "仍在登录页面，可能登录未完成或失败"
+            set $login_success = false
+            set $error_type = "unknown"
+        else
+            # 方法 4: 导出界面结构分析
+            log "无法确定登录状态，导出界面结构分析..."
+            set $hierarchy = dump_hierarchy
+            log "界面结构已导出"
+
+            # 假设登录成功（无法确定时）
+            log "假设登录成功，继续执行"
+            set $login_success = true
+        end
+    end
+end
+
+# ================= 步骤 7: 错误处理与重试 =================
+log "步骤 7: 错误处理与重试"
+
+if not $login_success
+    log "登录失败，准备重试..."
+
+    set $attempt = 1
+
+    while $attempt < $max_login_attempts
+        log "第 ${attempt} 次登录尝试失败，进行第 ${attempt + 1} 次重试"
+
+        # 截图保存错误状态
+        if $enable_screenshot
+            shell "screencap -p /sdcard/login_failed_attempt_${attempt}.png"
+        end
+
+        # 等待后重试
+        wait $login_retry_delay
+
+        # 重新输入凭据
+        clear id:"username"
+        clear id:"password"
+        wait 0.3
+
+        input id:"username" "${test_username}"
+        wait 0.3
+        input id:"password" "${test_password}"
+        wait 0.3
+
+        # 点击登录
+        click id:"login_button"
+        wait 3
+
+        # 验证结果
+        if exists id:"welcome_message"
+            set $welcome_text = get_text id:"welcome_message"
+            log "✓ 重试成功! 欢迎信息: $welcome_text"
+            set $login_success = true
+            break
+        end
+
+        set $attempt = $attempt + 1
+    end
+
+    if not $login_success
+        log "✗ 所有登录尝试均失败"
+        log "错误类型: $error_type"
+
+        # 最终截图
+        if $enable_screenshot
+            shell "screencap -p /sdcard/login_final_failure.png"
+        end
+
+        # 导出最终状态
+        set $final_hierarchy = dump_hierarchy
+        log "最终界面状态已导出"
+
+        exit 1
+    end
+end
+
+# ================= 步骤 8: 登录后操作 =================
+log "步骤 8: 登录后操作"
+
+if $login_success
+    log "执行登录后操作..."
+
+    # 等待主界面完全加载
+    wait 2
+
+    # 检查主界面元素
+    if exists id:"main_content"
+        log "✓ 主界面已加载"
+    end
+
+    # 模拟用户浏览行为
+    log "模拟用户浏览行为..."
+    swipe up 0.3
+    wait 1
+    swipe up 0.3
+    wait 1
+
+    # 返回顶部
+    swipe down 0.5
+    wait 0.5
+end
+
+# ================= 步骤 9: 清理与返回 =================
+log "步骤 9: 清理与返回"
+
+# 返回主页
+home
+wait 1
+
+# 记录完成日志
+log "=== 登录自动化完成 ==="
+log "登录状态: ${login_success}"
+log "执行时间: $(date)"  # 如果支持日期函数
+
+# 最终截图（可选）
+if $enable_screenshot and $login_success
+    shell "screencap -p /sdcard/login_success_final.png"
+end
+
+exit 0

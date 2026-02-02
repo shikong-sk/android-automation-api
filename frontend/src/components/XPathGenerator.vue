@@ -367,6 +367,52 @@ const templates = [
       { key: 'class', label: '元素类型', placeholder: '如: android.widget.Button' },
       { key: 'index', label: '索引(从1开始)', placeholder: '如: 1' }
     ]
+  },
+  {
+    name: '父元素定位',
+    description: '通过子元素定位父元素',
+    pattern: '//___/parent::*[@resource-id="___"]',
+    params: [
+      { key: 'childClass', label: '子元素类型', placeholder: '如: android.widget.Button' },
+      { key: 'parentId', label: '父元素 ID', placeholder: '如: com.example:id/toolbar' }
+    ]
+  },
+  {
+    name: '后续兄弟元素',
+    description: '定位同一父级下的后续兄弟元素',
+    pattern: '//___[@text="___"]/following-sibling::___[1]',
+    params: [
+      { key: 'refClass', label: '参考元素类型', placeholder: '如: android.widget.TextView' },
+      { key: 'refText', label: '参考元素文本', placeholder: '如: 设置' },
+      { key: 'targetClass', label: '目标元素类型', placeholder: '如: android.widget.Switch' }
+    ]
+  },
+  {
+    name: '前置兄弟元素',
+    description: '定位同一父级下的前置兄弟元素',
+    pattern: '//___[@text="___"]/preceding-sibling::___[1]',
+    params: [
+      { key: 'refClass', label: '参考元素类型', placeholder: '如: android.widget.Switch' },
+      { key: 'refText', label: '参考元素文本', placeholder: '如: 夜问模式' },
+      { key: 'targetClass', label: '目标元素类型', placeholder: '如: android.widget.TextView' }
+    ]
+  },
+  {
+    name: '祖级元素定位',
+    description: '通过子元素向上查找祖级元素',
+    pattern: '//___[@resource-id="___"]/ancestor::___[last()]',
+    params: [
+      { key: 'childId', label: '子元素 ID', placeholder: '如: com.example:id/action_bar' },
+      { key: 'ancestorClass', label: '祖级类型', placeholder: '如: android.widget.LinearLayout' }
+    ]
+  },
+  {
+    name: '坐标+偏移定位',
+    description: '基于坐标点获取附近元素',
+    pattern: '(//*[contains(@bounds, "[___,")])[last()]',
+    params: [
+      { key: 'x', label: 'X 坐标', placeholder: '如: 100' }
+    ]
   }
 ]
 

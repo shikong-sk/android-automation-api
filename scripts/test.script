@@ -1,0 +1,34 @@
+# test.script
+
+# 设置变量
+set $app_package = "com.android.settings"
+
+# 启动设置应用
+log "启动设置应用"
+start_app $app_package
+wait 2
+
+human_click xpath:'//*[@resource-id="android:id/search_src_text"]'
+
+wait 1
+
+input xpath:'//*[@resource-id="android:id/search_src_text"]' "开发人员选项"
+wait 1
+
+human_click xpath:'//android.widget.TextView[@text="开发人员选项"]'
+
+ loop 5
+   human_drag 500,1800 500,200 trajectory=linear_jitter duration=0.6
+   wait 0.5
+  # 检查元素是否存在
+  if exists xpath:'//*[@text="指针位置"]'
+    # 元素存在时的操作
+    log "找到元素 指针位置"
+    break
+  end
+ end
+
+
+home
+
+stop_app $app_package

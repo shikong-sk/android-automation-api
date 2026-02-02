@@ -1,0 +1,364 @@
+# 复杂流程自动化脚本
+# ===================
+# 演示复杂业务流程自动化
+# 包含：错误处理、重试机制、步骤验证、状态管理、清理操作
+
+log "=== 开始复杂流程自动化 ==="
+
+# ================= 配置区域 =================
+# 应用配置
+set $app_package = "com.example.app"
+set $main_activity = ".MainActivity"
+
+# 超时配置
+set $step_timeout = 30              # 步骤执行超时时间（秒）
+set $element_timeout = 15           # 元素等待超时时间（秒）
+
+# 重试配置
+set $max_retries = 3                # 最大重试次数
+set $retry_delay = 2                # 重试间隔（秒）
+
+# 调试配置
+set $enable_debug = true            # 启用调试模式
+set $screenshot_on_error = true     # 错误时截图
+
+# 状态跟踪
+set $current_step = 0
+set $total_steps = 6
+set $workflow_success = false
+
+log "配置加载完成"
+log "目标应用: ${app_package}"
+log "总步骤数: ${total_steps}"
+log "调试模式: ${enable_debug}"
+
+# ================= 辅助函数定义 =================
+
+# 辅助函数：记录步骤开始
+macro log_step($step_name)
+    set $current_step = $current_step + 1
+    log "----------------------------------------"
+    log "步骤 ${current_step}/${total_steps}: ${step_name}"
+    log "----------------------------------------"
+end
+
+# 辅助函数：带超时的等待元素
+macro wait_element_with_timeout($selector, $timeout)
+    set $elapsed = 0
+    while $elapsed < $timeout
+        if exists $selector
+            log "元素出现，耗时 ${elapsed} 秒"
+            return true
+        end
+        wait 0.5
+        set $elapsed = $elapsed + 0.5
+    end
+    log "等待元素超时: ${selector}"
+    return false
+end
+
+# 辅助函数：带重试的操作
+macro retry_operation($operation_name, $operation_code, $max_attempts)
+    set $attempt = 1
+    set $success = false
+
+    while $attempt <= $max_attempts
+        log "执行 ${operation_name} (第 ${attempt} 次尝试)"
+
+        try
+            # 执行传入的操作代码
+            $operation_code
+            set $success = true
+            log "${operation_name} 成功"
+            break
+        catch
+            log "${operation_name} 失败"
+
+            if $attempt < $max_attempts
+                log "等待 ${retry_delay} 秒后重试..."
+                wait $retry_delay
+            end
+        end
+
+        set $attempt = $attempt + 1
+    end
+
+    if not $success
+        log "${operation_name} 重试次数耗尽"
+    end
+
+    return $success
+end
+
+# 辅助函数：截图保存
+macro save_screenshot($filename)
+    if $screenshot_on_error
+        shell "screencap -p /sdcard/${filename}.png"
+        log "截图已保存: ${filename}.png"
+    end
+end
+
+# ================= 步骤 1: 启动应用 =================
+call log_step("启动应用")
+
+try
+    start_app "${app_package}"
+    log "应用启动命令已发送"
+catch
+    log "✗ 应用启动失败"
+    save_screenshot("error_start_app")
+    exit 1
+end
+
+# 等待应用启动
+log "等待应用启动..."
+wait 3
+
+# 验证应用启动成功
+if retry_operation("验证应用启动", exists id:"main_content", 3)
+    log "✓ 应用启动成功"
+else
+    log "✗ 应用启动验证失败"
+    save_screenshot("error_app_startup")
+    exit 1
+end
+
+# ================= 步骤 2: 导航到目标页面 =================
+call log_step("导航到目标页面")
+
+log "检查当前页面状态..."
+
+# 检查是否需要导航
+if not exists id:"target_page"
+    log "当前不在目标页面，开始导航..."
+
+    # 点击导航按钮
+    if exists id:"nav_menu"
+        click id:"nav_menu"
+        wait 1
+    end
+
+    # 选择目标选项
+    if exists text:"目标页面"
+        click text:"目标页面"
+        wait 2
+    elif exists id:"target_tab"
+        click id:"target_tab"
+        wait 2
+    else
+        log "✗ 无法找到导航入口"
+        save_screenshot("error_navigation")
+        exit 1
+    end
+end
+
+# 等待目标页面加载
+if wait_element_with_timeout(id:"target_content", $element_timeout)
+    log "✓ 目标页面已加载"
+else
+    log "✗ 目标页面加载超时"
+    save_screenshot("error_page_load")
+    exit 1
+end
+
+# ================= 步骤 3: 执行主操作 =================
+call log_step("执行主操作")
+
+log "检查操作前置条件..."
+
+# 验证前置条件
+if exists id:"prerequisite_element"
+    set $prereq_info = get_info id:"prerequisite_element"
+    if not $prereq_info.enabled
+        log "前置条件不满足，跳过主操作"
+    else
+        log "前置条件满足，执行主操作"
+
+        # 执行主操作
+        if exists id:"action_button"
+            click id:"action_button"
+            wait 1
+
+            # 处理确认对话框
+            if exists id:"confirm_dialog"
+                log "处理确认对话框..."
+                if exists text:"确定"
+                    click text:"确定"
+                elif exists text:"是"
+                    click text:"是"
+                end
+                wait 1
+            end
+        else
+            log "✗ 未找到操作按钮"
+            save_screenshot("error_no_action_button")
+        end
+    end
+else
+    log "前置条件元素不存在，继续执行"
+end
+
+# ================= 步骤 4: 等待操作完成 =================
+call log_step("等待操作完成")
+
+log "等待操作结果..."
+
+# 等待操作完成指示器
+set $wait_complete = false
+set $wait_time = 0
+
+while $wait_time < $step_timeout
+    # 检查操作成功
+    if exists id:"success_indicator"
+        log "✓ 操作成功完成"
+        set $wait_complete = true
+        break
+    end
+
+    # 检查操作失败
+    if exists id:"error_indicator"
+        log "✗ 操作失败"
+        set $error_message = get_text id:"error_indicator"
+        log "错误信息: $error_message"
+        save_screenshot("error_operation_failed")
+        exit 1
+    end
+
+    # 等待后继续检查
+    wait 1
+    set $wait_time = $wait_time + 1
+end
+
+if not $wait_complete
+    log "⚠ 操作等待超时，检查当前状态..."
+
+    # 检查是否需要手动确认
+    if exists id:"pending_confirmation"
+        log "需要手动确认，等待用户操作..."
+        wait 5
+    end
+end
+
+# ================= 步骤 5: 验证操作结果 =================
+call log_step("验证操作结果")
+
+log "验证操作最终结果..."
+
+# 多种验证方式
+set $verification_passed = false
+
+# 验证方式 1: 检查成功标识
+if exists id:"result_success"
+    set $result_text = get_text id:"result_success"
+    log "✓ 验证通过: $result_text"
+    set $verification_passed = true
+end
+
+# 验证方式 2: 检查预期内容
+if not $verification_passed
+    if exists id:"expected_content"
+        set $content = get_text id:"expected_content"
+        if $content != ""
+            log "✓ 验证通过，内容存在: $content"
+            set $verification_passed = true
+        end
+    end
+end
+
+# 验证方式 3: 检查状态变化
+if not $verification_passed
+    set $status_info = get_info id:"status_indicator"
+    if $status_info.exists and $status_info.text == "完成"
+        log "✓ 验证通过，状态为完成"
+        set $verification_passed = true
+    end
+end
+
+if not $verification_passed
+    log "⚠ 验证未通过，但继续执行"
+
+    # 截图记录当前状态
+    save_screenshot("verification_pending")
+end
+
+# ================= 步骤 6: 清理与返回 =================
+call log_step("清理与返回")
+
+log "执行清理操作..."
+
+# 清理临时数据
+if exists id:"temporary_element"
+    log "清理临时元素..."
+    # 根据需要执行清理操作
+end
+
+# 保存操作日志
+log "操作日志已记录"
+
+# 返回主页
+log "返回主页..."
+home
+wait 1
+
+# 验证返回成功
+if exists id:"home_screen"
+    log "✓ 已返回主页"
+else
+    log "⚠ 返回主页验证失败，尝试再次返回"
+    home
+    wait 1
+end
+
+# ================= 流程完成 =================
+log "========================================"
+log "复杂流程自动化执行完成"
+log "========================================"
+
+# 更新状态
+set $workflow_success = true
+
+# 最终统计
+log "执行统计:"
+log "  - 总步骤数: ${current_step}"
+log "  - 成功步骤: ${current_step}"
+log "  - 验证状态: ${verification_passed}"
+
+# 最终截图
+if $enable_debug
+    save_screenshot("workflow_complete")
+end
+
+# 导出最终状态
+set $final_state = dump_hierarchy
+log "最终状态已导出"
+
+log "=== 复杂流程自动化任务完成 ==="
+
+exit 0
+
+# ================= 错误处理 =================
+# 全局错误处理（可在任何步骤调用）
+# ==========================================
+global_error_handler:
+    log "========================================"
+    log "发生全局错误，执行错误处理"
+    log "========================================"
+
+    # 截图保存
+    save_screenshot("global_error")
+
+    # 导出当前状态
+    set $error_state = dump_hierarchy
+    log "错误状态已导出"
+
+    # 尝试返回安全状态
+    log "尝试返回安全状态..."
+    home
+    wait 1
+
+    # 记录错误信息
+    log "错误发生位置: 步骤 ${current_step}"
+    log "错误时间: $(date)"  # 如果支持日期函数
+
+    log "错误处理完成"
+    return

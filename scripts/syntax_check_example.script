@@ -1,0 +1,82 @@
+# DSL 语法合规性测试脚本
+# ======================
+# 验证变量插值和变量使用是否正确
+
+log "=== DSL 语法测试 ==="
+
+# ========== 测试 1: 正确的变量插值语法 ==========
+log "--- 测试 1: 正确的变量插值 ---"
+set $name = "World"
+log "Hello ${name}"           # 正确: 使用 ${}
+log "Name is ${name}"         # 正确
+log "Value: ${name}"          # 正确
+
+# ========== 测试 2: 错误的变量语法（不应被解析）==========
+log "--- 测试 2: 错误的变量语法 ---"
+log "This $name will not be interpolated"  # $name 不会被转成 World
+log "No interpolation: $test"              # 未定义变量保持原样
+
+# ========== 测试 3: 数字变量插值 ==========
+log "--- 测试 3: 数字变量插值 ---"
+set $x = 100
+set $y = 200
+log "Coordinates: ${x}, ${y}"
+log "X = ${x}, Y = ${y}"
+
+# ========== 测试 4: 选择器中的变量插值 ==========
+log "--- 测试 4: 选择器变量插值 ---"
+set $id = "android:id/title"
+log "Selector: ${id}"
+
+# ========== 测试 5: 包名组合 ==========
+log "--- 测试 5: 包名组合 ---"
+set $prefix = "com.android"
+set $suffix = "settings"
+set $package = "${prefix}.${suffix}"
+log "Package: ${package}"
+
+# ========== 测试 6: 多变量组合 ==========
+log "--- 测试 6: 多变量组合 ---"
+set $protocol = "http"
+set $host = "localhost"
+set $port = 8000
+set $path = "api/status"
+set $url = "${protocol}://${host}:${port}/${path}"
+log "URL: ${url}"
+
+# ========== 测试 7: 重复使用同一变量 ==========
+log "--- 测试 7: 重复使用变量 ---"
+set $text = "重复"
+log "${text} ${text} ${text}"
+
+# ========== 测试 8: 空字符串插值 ==========
+log "--- 测试 8: 空字符串 ---"
+set $empty = ""
+log "Empty value: '${empty}'"
+
+# ========== 测试 9: 特殊字符插值 ==========
+log "--- 测试 9: 特殊字符 ---"
+set $special = "test@123"
+set $path_with_slash = "/sdcard/test"
+set $with_dash = "hello-world"
+log "Email: ${special}"
+log "Path: ${path_with_slash}"
+log "Dashed: ${with_dash}"
+
+# ========== 测试 10: 嵌套变量名（无效）==========
+log "--- 测试 10: 嵌套变量名 ---"
+set $var1 = "Hello"
+# ${${var1}} - 不支持嵌套，${var1} 不会被当作变量
+log "Nested test: ${var1}"
+
+# ========== 测试 11: 中文变量值 ==========
+log "--- 测试 11: 中文值 ---"
+set $zh_name = "你好"
+log "中文: ${zh_name}"
+
+# ========== 测试 12: 脚本中使用变量作为参数 ==========
+log "--- 测试 12: 命令参数 ---"
+set $wait_time = 1
+wait ${wait_time}
+
+log "=== 测试完成 ==="

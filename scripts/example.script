@@ -6,7 +6,7 @@ set $app_package = "com.android.settings"
 
 # 启动设置应用
 log "启动设置应用"
-start_app $app_package
+start_app "${app_package}"
 wait 2
 
 # 等待界面加载

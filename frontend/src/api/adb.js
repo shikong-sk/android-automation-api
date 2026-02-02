@@ -77,6 +77,10 @@ export const adbApi = {
     })
   },
 
+  takeScreenshotBase64() {
+    return request.get('/adb/screenshot-base64')
+  },
+
   // 设备控制
   reboot(mode = null) {
     const params = mode ? { mode } : {}

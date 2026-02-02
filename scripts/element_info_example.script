@@ -84,8 +84,13 @@ end
 # 8. 导出当前界面结构（用于调试）
 log "7. 导出当前界面结构"
 set $xml = dump_hierarchy
-log "   界面 XML 长度: ${xml.length} 字符"
-log "   前200字符: ${xml.substring(0,200)}"
+# 注意: DSL 不支持对象属性访问，如 xml.length 或 xml.substring()
+# $xml 变量包含完整的 XML 字符串，可用于进一步处理或日志输出
+log "   界面 XML 已导出到变量 $xml"
+log "   XML 包含当前界面完整结构信息"
+# 可以将 XML 输出到文件（需要配合 shell 命令）
+# 注意: 这里的 log 命令会输出完整的 XML，可能很长
+log "   ${xml}"  # 输出完整 XML（可能会很长）
 
 # 9. 条件判断示例：根据元素状态执行不同操作
 log "8. 条件判断示例"
@@ -108,9 +113,9 @@ log "9. 滑动页面并重新获取信息"
 loop 2
     swipe up 0.5
     wait 1
-    
+
     set $new_title = get_text id:"android:id/title"
-    log "   滑动后页面标题: $new_title"
+    log "   滑动后页面标题: ${new_title}"
 end
 
 # 返回主页

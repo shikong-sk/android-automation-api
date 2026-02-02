@@ -763,6 +763,62 @@ click text:$name
 input id:"input" $text
 ```
 
+#### 变量插值
+
+支持 `${variable}` 语法在字符串中插入变量值：
+
+```bash
+# 基础插值
+set $name = "World"
+log "Hello ${name}"              # 输出: Hello World
+
+# 多变量插值
+set $x = 10
+set $y = 20
+log "x + y = ${x} + ${y}"        # 输出: x + y = 10 + 20
+
+# 选择器值插值
+set $target_id = "com.example:id/button"
+click id:"${target_id}"
+
+# 命令参数插值
+set $username = "test@example.com"
+input id:"username" "${username}"
+input id:"password" "${password}"
+
+# 结合使用
+set $app = "com.android.settings"
+set $element_id = "search"
+start_app "${app}"
+click id:"com.android.settings:id/${element_id}"
+```
+
+**变量作用域：**
+- 变量在整个脚本中有效
+- 子脚本调用会继承父脚本的所有变量
+- 子脚本是变量隔离的，修改不会影响父脚本
+
+**语法限制：**
+1. 必须使用 `${variable}` 语法进行字符串插值
+   - ✅ 正确：`log "Name: ${name}"`
+   - ❌ 错误：`log "Name: $name"`（不会被解析）
+
+2. 不支持对象属性访问和方法调用
+   - ❌ 错误：`${xml.length}` - 不支持 `.length`
+   - ❌ 错误：`${str.substring(0,10)}` - 不支持方法调用
+   - ✅ 替代：使用完整的字符串值
+
+3. 不支持表达式求值
+   - ❌ 错误：`${x + y}` - 不支持数学运算
+   - ✅ 替代：先计算再赋值 `set $sum = 30`, `log "${sum}"`
+
+4. 未定义的变量保持原样
+   - `${undefined_var}` → `${undefined_var}`（不报错，保持原字符串）
+
+5. 变量值会自动转换为字符串
+   - 数字 10 会转换为 "10"
+   - 布尔值 true 会转换为 "True"
+
 #### 元素信息获取
 
 ```bash
@@ -794,8 +850,6 @@ dump_hierarchy
 ```bash
 if exists id:"button"
     click id:"button"
-elif $var == "value"
-    log "变量匹配"
 else
     log "未找到"
 end
@@ -803,9 +857,6 @@ end
 # 条件表达式
 # exists id:"xxx"        - 元素存在
 # not exists id:"xxx"    - 元素不存在
-# $var == "value"        - 变量等于
-# $var != "value"        - 变量不等于
-# $var                   - 变量为真
 ```
 
 #### 循环
@@ -817,9 +868,13 @@ loop 5
     wait 1
 end
 
-# 条件循环
-while exists id:"loading"
-    wait 1
+# 条件循环（使用 loop + break）
+loop 30
+    if not exists id:"loading"
+        log "加载完成"
+        break
+    end
+    wait 0.5
 end
 
 # 循环控制
@@ -904,11 +959,957 @@ log $btn_info
 
 # 查找所有 TextView 元素
 set $textviews = find_elements class:"android.widget.TextView"
-log "找到 TextView 数量: $textviews.count"
+log "找到元素"
 
 # 导出当前界面结构（用于调试）
 set $xml = dump_hierarchy
 log "界面结构已导出"
+```
+
+### 完整 DSL 命令参考
+
+#### 1. 设备连接与状态
+
+```bash
+# 连接设备（自动选择第一个可用设备）
+connect
+
+# 通过序列号连接设备
+connect "emulator-5554"
+
+# 通过 WiFi IP 连接设备
+connect "192.168.1.100:5555"
+
+# 获取设备状态
+get_status
+
+# 断开设备连接
+disconnect
+```
+
+#### 2. 元素定位方式详解
+
+DSL 支持四种元素定位方式，每种方式适用于不同场景：
+
+**2.1 resource-id 定位（推荐）**
+
+通过元素的 `resource-id` 属性定位，是最稳定和可靠的定位方式：
+
+```bash
+# 通过完整的 resource-id 点击
+click id:"com.example.app:id/submit_button"
+
+# 通过部分 ID 定位（需要确保唯一性）
+click id:"submit_button"
+
+# 定位输入框并输入文本
+input id:"username_input" "test_user"
+
+# 清除输入框内容
+clear id:"password_input"
+```
+
+**2.2 text 定位**
+
+通过元素的显示文本内容定位，适用于文本内容固定的场景：
+
+```bash
+# 精确文本匹配
+click text:"确定"
+click text:"提交"
+click text:"取消"
+
+# 包含文本匹配（需要配合 XPath）
+click xpath:"//*[contains(@text, '确认')]"
+```
+
+**2.3 class 定位**
+
+通过元素的 Android 类名定位，适用于批量操作同类元素：
+
+```bash
+# 定位单个按钮
+click class:"android.widget.Button"
+
+# 定位所有按钮并操作（需要循环）
+set $buttons = find_elements class:"android.widget.Button"
+log "找到按钮"
+
+# 定位列表项
+click class:"android.widget.ListView"
+```
+
+**2.4 XPath 定位（最灵活）**
+
+使用 XPath 表达式进行灵活定位，支持复杂的定位条件：
+
+```bash
+# 精确匹配
+click xpath:"//android.widget.Button[@text='确定']"
+
+# 属性包含
+click xpath:"//*[contains(@text, '提交')]"
+
+# 组合条件（AND）
+click xpath:"//android.widget.Button[@clickable='true' and @enabled='true']"
+
+# 索引定位（选择第 N 个匹配元素）
+click xpath:"(//android.widget.Button)[1]"
+click xpath:"(//android.widget.Button)[last()]"
+
+# 父子关系定位
+click xpath:"//android.widget.LinearLayout[@resource-id='container']/android.widget.Button"
+
+# 跨层级定位
+click xpath:"//android.widget.ListView//android.widget.Button[@text='详情']"
+```
+
+#### 3. 滑动操作详解
+
+滑动操作支持多种方向和幅度控制：
+
+```bash
+# 基础滑动方向
+swipe up              # 向上滑动（默认幅度 0.5）
+swipe down            # 向下滑动
+swipe left            # 向左滑动
+swipe right           # 向右滑动
+
+# 指定滑动幅度（0.1 - 1.0）
+swipe up 0.3          # 向上滑动 30% 屏幕高度
+swipe down 0.8        # 向下滑动 80% 屏幕高度
+swipe left 0.5        # 向左滑动 50% 屏幕宽度
+swipe right 0.5       # 向右滑动 50% 屏幕宽度
+
+# 坐标滑动（从指定位置滑动）
+swipe 100, 500, 100, 200    # 从 (100,500) 滑动到 (100,200)
+swipe 500, 800, 500, 300    # 从 (500,800) 滑动到 (500,300)
+
+# 带持续时间的滑动（毫秒）
+swipe 100, 500, 100, 200, 500    # 滑动持续 500ms
+```
+
+#### 4. 等待操作详解
+
+等待操作是自动化脚本中最重要的部分，确保界面元素加载完成：
+
+```bash
+# 固定时间等待
+wait 1               # 等待 1 秒
+wait 0.5             # 等待 0.5 秒
+wait 10              # 等待 10 秒
+
+# 等待元素出现
+wait_element id:"loading" 10           # 等待 loading 元素出现，最多 10 秒
+wait_element text:"确定" 5             # 等待确定按钮出现，最多 5 秒
+wait_element xpath:"//Button" 8        # 等待按钮出现，最多 8 秒
+
+# 等待元素消失
+wait_gone id:"loading" 10              # 等待 loading 元素消失，最多 10 秒
+wait_gone text:"加载中" 5              # 等待加载中文字消失，最多 5 秒
+
+# 组合使用：等待元素出现后执行操作
+wait_element id:"submit_button" 10
+click id:"submit_button"
+
+# 循环等待直到条件满足
+loop 20
+    if exists id:"content_loaded"
+        log "内容已加载"
+        break
+    end
+    wait 0.5
+end
+```
+
+#### 5. 应用管理详解
+
+```bash
+# 启动应用
+start_app "com.example.app"                    # 通过包名启动
+start_app "com.example.app/.MainActivity"      # 指定 Activity
+
+# 停止应用
+stop_app "com.example.app"
+
+# 清除应用数据（相当于重置应用）
+clear_app "com.example.app"
+
+# 获取应用版本
+set $version = get_app_version "com.example.app"
+log "应用版本: $version"
+
+# 获取当前前台应用
+set $current = get_current_app
+log "当前应用: $current"
+```
+
+#### 6. 屏幕控制详解
+
+```bash
+# 亮屏
+screen_on
+
+# 锁屏
+screen_off
+
+# 解锁屏幕
+unlock
+
+# 亮屏并解锁
+screen_on
+wait 0.5
+unlock
+
+# 检查屏幕状态
+# 需要配合 get_info 和元素定位
+if exists id:"lock_screen"
+    unlock
+end
+```
+
+#### 7. 人类模拟操作详解
+
+人类模拟操作通过添加随机性来模拟真实用户行为，避免被检测为自动化脚本：
+
+**7.1 人类模拟点击**
+
+```bash
+# 基础人类模拟点击
+human_click id:"button"              # 通过选择器点击
+human_click 500, 800                 # 通过坐标点击
+
+# 自定义随机参数
+human_click id:"button", offset_min=5, offset_max=15
+human_click 500, 800, offset_min=3, offset_max=10, delay_min=0.1, delay_max=0.5
+
+# 参数说明
+# offset_min/max: 随机偏移范围（像素），默认 3/10
+# delay_min/max: 操作前延迟范围（秒），默认 0.05/0.3
+# duration_min/max: 按压时长范围（秒），默认 0.05/0.15
+```
+
+**7.2 人类模拟双击**
+
+```bash
+# 基础双击
+human_double_click id:"item"
+human_double_click 500, 800
+
+# 自定义双击间隔
+human_double_click id:"item", interval_min=0.1, interval_max=0.3
+```
+
+**7.3 人类模拟长按**
+
+```bash
+# 基础长按
+human_long_press id:"item"
+human_long_press 500, 800
+
+# 自定义长按时间
+human_long_press id:"item", duration_min=1.0, duration_max=2.0
+human_long_press 500, 800, duration_min=1.5, duration_max=3.0
+```
+
+**7.4 人类模拟拖拽**
+
+```bash
+# 坐标到坐标拖拽
+human_drag 100, 1500, 100, 500              # 从 (100,1500) 拖到 (100,500)
+
+# 指定拖拽时间
+human_drag 100, 1500, 100, 500, duration=2.0
+
+# 贝塞尔曲线轨迹（推荐，最自然）
+human_drag 100, 1500, 100, 500, trajectory="bezier", speed="ease_in_out"
+
+# 直线抖动轨迹（模拟手指不稳）
+human_drag 100, 1500, 100, 500, trajectory="linear_jitter", speed="random"
+
+# 元素到元素拖拽
+human_drag id:"source_item", id:"target_area"
+
+# 速度模式
+human_drag 100, 1500, 100, 500, speed="ease_in"      # 慢-快
+human_drag 100, 1500, 100, 500, speed="ease_out"     # 快-慢
+human_drag 100, 1500, 100, 500, speed="linear"       # 匀速
+human_drag 100, 1500, 100, 500, speed="random"       # 随机速度
+```
+
+#### 8. 变量与表达式详解
+
+**8.1 变量赋值**
+
+```bash
+# 字符串变量
+set $name = "value"
+set $app = "com.example.app"
+
+# 数字变量
+set $count = 10
+set $x = 500
+set $y = 800
+
+# 布尔变量
+set $is_visible = true
+set $is_enabled = false
+
+# 元素信息变量
+set $text = get_text id:"title"
+set $info = get_info id:"button"
+set $exists = exists id:"element"
+
+# 表达式结果变量
+set $sum = 30
+```
+
+**8.2 条件表达式**
+
+```bash
+# 元素存在判断
+if exists id:"button"
+    click id:"button"
+end
+
+# 元素不存在判断
+if not exists id:"loading"
+    log "加载完成"
+end
+```
+
+**8.3 循环详解**
+
+```bash
+# 固定次数循环
+loop 5
+    click id:"next"
+    wait 1
+end
+
+# 条件循环（当条件为真时执行）
+loop 30
+    if not exists id:"loading"
+        log "加载完成"
+        break
+    end
+    wait 0.5
+end
+
+# 循环直到条件满足
+loop 20
+    if exists id:"content"
+        log "内容已加载"
+        break
+    end
+    wait 0.5
+end
+
+# 循环控制
+loop 100
+    if exists id:"done"
+        break                    # 跳出循环
+    end
+
+    if exists id:"skip"
+        continue                 # 跳过后续代码，进入下一次循环
+    end
+
+    click id:"next"
+    wait 1
+end
+
+# 嵌套循环
+loop 3
+    log "外层循环第 ${i} 次"
+    loop 5
+        log "内层循环"
+        wait 0.5
+    end
+end
+```
+
+**8.4 错误处理详解**
+
+```bash
+# 基础错误处理
+try
+    click id:"maybe_not_exist"
+    wait 1
+catch
+    log "元素不存在，跳过操作"
+end
+
+# 错误处理与重试
+set $retry_count = 0
+loop 3
+    try
+        click id:"submit"
+        log "点击成功"
+        break                    # 成功后跳出循环
+    catch
+        log "点击失败，重试"
+        wait 1
+    end
+end
+
+# 多个可能出错的操作
+try
+    click id:"button1"
+    wait_element id:"result" 5
+    set $result = get_text id:"result"
+catch
+    log "操作失败，执行备用方案"
+    click id:"backup_button"
+end
+```
+
+#### 9. 子脚本调用详解
+
+```bash
+# 调用同目录下的子脚本
+call "login.script"
+call "navigate.script"
+
+# 调用子脚本并传递参数（通过变量）
+set $target_page = "settings"
+call "navigate.script"
+
+# 子脚本示例 (navigate.script)
+# ============================
+# start_app "com.example.app"
+# wait 2
+# click id:"${target_page}"
+# log "导航到 ${target_page} 页面"
+
+# 最佳实践：将常用操作封装为子脚本
+# common_actions.script
+# =====================
+# log "执行通用操作"
+# wait_element id:"ready" 10
+# click id:"confirm"
+```
+
+#### 10. Shell 命令详解
+
+```bash
+# 执行 Shell 命令
+shell "ls /sdcard"                           # 列出文件
+shell "cat /sdcard/test.txt"                 # 读取文件
+shell "rm /sdcard/test.txt"                  # 删除文件
+shell "mkdir -p /sdcard/test"                # 创建目录
+shell "pm list packages"                     # 列出所有包
+shell "dumpsys window"                       # 获取窗口信息
+
+# 获取设备信息
+set $info = shell "dumpsys deviceinfo"
+log $info
+
+# 截图并保存
+shell "screencap -p /sdcard/screenshot.png"
+
+# 获取屏幕分辨率
+set $resolution = shell "wm size"
+log "屏幕分辨率: $resolution"
+```
+
+### 高级用法与最佳实践
+
+#### 1. 页面对象模式
+
+将页面元素定位器集中管理，提高脚本可维护性：
+
+```bash
+# page_objects.script
+# ==================
+# 变量方式管理元素定位器
+set $LOGIN_USERNAME = "com.example:id/username"
+set $LOGIN_PASSWORD = "com.example:id/password"
+set $LOGIN_SUBMIT = "com.example:id/login_button"
+
+# 在主脚本中使用
+input id:$LOGIN_USERNAME "test@example.com"
+input id:$LOGIN_PASSWORD "password123"
+click id:$LOGIN_SUBMIT
+```
+
+#### 2. 等待模式
+
+```bash
+# 智能等待模式：等待元素出现或超时
+loop 60
+    if exists id:"content"
+        log "元素出现"
+        break
+    end
+    wait 0.5
+end
+
+if not exists id:"content"
+    log "等待元素超时"
+end
+```
+
+#### 3. 屏幕截图与调试
+
+```bash
+# 在关键步骤截图
+try
+    click id:"submit"
+    wait 2
+
+    # 检查结果
+    if exists id:"success"
+        log "操作成功"
+        shell "screencap -p /sdcard/success.png"
+    else
+        log "操作可能失败，截图保存"
+        shell "screencap -p /sdcard/debug.png"
+
+        # 导出界面结构用于调试
+        set $xml = dump_hierarchy
+        log $xml
+    end
+catch
+    log "发生错误，截图保存"
+    shell "screencap -p /sdcard/error.png"
+end
+```
+
+#### 4. 性能监控
+
+```bash
+# 记录操作耗时
+start_app "com.example.app"
+wait 3
+
+# 监控内存使用
+set $memory = shell "dumpsys meminfo com.example.app | grep TOTAL"
+log "内存使用: $memory"
+
+# 监控帧率
+set $fps = shell "dumpsys gfxinfo com.example.app"
+log "帧率信息: $fps"
+```
+
+### 常见问题与解决方案
+
+#### Q1: 元素定位失败
+
+```bash
+# 问题：元素定位失败，提示找不到元素
+
+# 解决方案 1: 增加等待时间
+wait_element id:"button" 10
+
+# 解决方案 2: 使用更稳定的选择器
+# 优先使用 id，其次是 text，最后是 XPath
+click id:"submit_button"           # 最佳
+click text:"提交"                   # 中等
+click xpath:"//Button[@text='提交']"  # 兜底
+
+# 解决方案 3: 检查元素是否被遮挡
+set $info = get_info id:"button"
+if $info
+    click id:"button"
+else
+    log "元素不存在"
+end
+
+# 解决方案 4: 滚动到可见位置
+swipe up 0.3
+wait 1
+```
+
+#### Q2: 滑动不稳定
+
+```bash
+# 问题：滑动操作不稳定，有时成功有时失败
+
+# 解决方案 1: 增加滑动幅度
+swipe up 0.8              # 使用更大的幅度
+
+# 解决方案 2: 增加滑动后的等待时间
+swipe up 0.5
+wait 1                    # 等待界面稳定
+
+# 解决方案 3: 使用人类模拟滑动
+human_drag 500, 1000, 500, 200, trajectory="bezier", speed="ease_in_out"
+```
+
+#### Q3: 应用启动失败
+
+```bash
+# 问题：应用启动后立即崩溃或无响应
+
+# 解决方案 1: 检查应用是否已安装
+set $packages = shell "pm list packages | grep com.example.app"
+if $packages
+    log "应用已安装"
+else
+    log "应用未安装"
+end
+
+# 解决方案 2: 清除应用数据后重试
+clear_app "com.example.app"
+wait 1
+start_app "com.example.app"
+wait 3
+
+# 解决方案 3: 检查应用状态
+set $status = get_app_version "com.example.app"
+log "应用版本: $status"
+```
+
+#### Q4: 脚本执行速度过快
+
+```bash
+# 问题：脚本执行速度过快，导致界面来不及响应
+
+# 解决方案: 在关键操作后增加等待
+click id:"button"
+wait 1                    # 等待界面响应
+
+# 使用人类模拟操作（自带延迟）
+human_click id:"button"
+
+# 动态等待：等待特定元素出现
+wait_element id:"result" 10
+```
+
+### 完整实战示例
+
+#### 示例 1: 自动化登录流程
+
+```bash
+# login_automation.script
+# ======================
+# 自动化登录流程示例
+
+log "=== 开始自动化登录 ==="
+
+# 配置测试账号
+set $test_username = "test@example.com"
+set $test_password = "password123"
+set $app_package = "com.example.app"
+
+# 启动应用
+log "1. 启动应用"
+start_app "${app_package}"
+wait 3
+
+# 检查是否在登录页面
+set $login_btn = get_info id:"login_button"
+if not exists id:"login_button"
+    log "未找到登录按钮，检查当前页面状态"
+
+    # 如果已登录，跳过登录
+    if exists id:"welcome_message"
+        log "已登录，跳过登录流程"
+    else
+        log "未知页面状态，尝试返回主页"
+        home
+        wait 1
+        start_app "${app_package}"
+        wait 3
+    end
+end
+
+# 输入账号密码
+log "2. 输入账号信息"
+input id:"username" "${test_username}"
+wait 0.5
+input id:"password" "${test_password}"
+wait 0.5
+
+# 点击登录按钮
+log "3. 点击登录按钮"
+click id:"login_button"
+
+# 等待登录结果
+log "4. 等待登录结果"
+wait 3
+
+# 验证登录结果
+if exists id:"welcome_message"
+    set $welcome = get_text id:"welcome_message"
+    log "登录成功: $welcome"
+else
+    # 检查错误信息
+    if exists id:"error_message"
+        set $error = get_text id:"error_message"
+        log "登录失败: $error"
+    else
+        log "登录结果未知"
+    end
+
+    # 截图保存
+    shell "screencap -p /sdcard/login_failed.png"
+end
+
+log "=== 自动化登录完成 ==="
+```
+
+#### 示例 2: 数据采集脚本
+
+```bash
+# data_collection.script
+# ======================
+# 从列表页面采集数据示例
+
+log "=== 开始数据采集 ==="
+
+# 配置
+set $app_package = "com.example.app"
+set $max_pages = 10
+set $output_file = "/sdcard/collected_data.txt"
+
+# 启动应用
+start_app "${app_package}"
+wait 2
+
+# 等待列表加载
+wait_element id:"list_view" 10
+log "列表已加载"
+
+# 采集数据
+set $total_count = 0
+
+loop $max_pages
+    log "采集数据"
+
+    # 查找当前页面的所有数据项
+    set $items = find_elements class:"android.widget.TextView"
+    log "本页找到 ${items.count} 条数据"
+
+    # 滑动到下一页
+    swipe up 0.7
+    wait 1.5
+
+    # 等待新数据加载
+    wait_element id:"loading" 5
+    wait_gone id:"loading" 10
+end
+
+log "数据采集完成，共采集 ${total_count} 条数据"
+log "数据已保存到: ${output_file}"
+
+# 返回主页
+home
+log "=== 数据采集任务完成 ==="
+```
+
+#### 示例 3: 复杂流程自动化（带重试和错误处理）
+
+```bash
+# complex_workflow.script
+# =======================
+# 复杂业务流程自动化示例
+
+log "=== 开始复杂流程自动化 ==="
+
+# 配置
+set $app_package = "com.example.app"
+set $max_retries = 3
+set $step_timeout = 30
+
+# 主流程
+# ======
+
+# 步骤 1: 启动应用
+log "步骤 1: 启动应用"
+start_app $app_package
+wait 3
+
+# 步骤 2: 等待主界面加载
+log "步骤 2: 等待主界面"
+wait_element id:"main_content" $step_timeout
+
+# 步骤 3: 执行主操作
+log "步骤 3: 执行主操作"
+if exists id:"action_button"
+    click id:"action_button"
+    wait 2
+
+    # 步骤 4: 处理确认对话框
+    if exists id:"confirm_dialog"
+        log "步骤 4: 确认操作"
+        click text:"确定"
+        wait 1
+    end
+
+    # 步骤 5: 等待操作完成
+    log "步骤 5: 等待操作完成"
+    wait_element id:"success_message" $step_timeout
+
+    if exists id:"success_message"
+        set $message = get_text id:"success_message"
+        log "操作成功: $message"
+    else
+        log "未找到成功提示"
+    end
+else
+    log "未找到操作按钮"
+end
+
+# 步骤 6: 清理和返回
+log "步骤 6: 清理"
+home
+wait 1
+
+log "=== 复杂流程自动化完成 ==="
+```
+
+#### 示例 4: 人类行为模拟脚本
+
+```bash
+# human_behavior.script
+# =====================
+# 模拟真实用户行为的自动化脚本
+
+log "=== 开始人类行为模拟 ==="
+
+# 配置
+set $app_package = "com.example.app"
+set $reading_time = 2        # 阅读时间（秒）
+set $scroll_speed = 0.8      # 滚动速度
+
+# 启动应用（模拟用户点击图标）
+log "1. 启动应用（模拟用户点击图标）"
+human_click 300, 800         # 点击屏幕中央（假设图标位置）
+wait 3
+
+# 等待主界面（模拟用户等待）
+log "2. 等待主界面加载"
+wait 2
+
+# 浏览首页（模拟用户浏览行为）
+log "3. 浏览首页内容"
+loop 5
+    # 模拟用户阅读内容
+    wait 2
+
+    # 模拟用户下滑浏览
+    human_drag 500, 1200, 500, 400, trajectory="bezier", speed="ease_in_out", duration=1.5
+
+    wait 1
+end
+
+# 点击感兴趣的内容（模拟用户点击）
+log "4. 点击感兴趣的内容"
+if exists text:"热门文章"
+    # 模拟用户犹豫一下再点击
+    wait 1
+    human_click text:"热门文章"
+end
+
+# 阅读文章详情
+log "5. 阅读文章详情"
+wait 3
+
+# 模拟用户滑动阅读长文章
+loop 3
+    human_drag 500, 1000, 500, 300, trajectory="linear_jitter", speed="random", duration=2.0
+    wait 1
+end
+
+# 点赞操作（模拟用户点赞行为）
+log "6. 点赞操作"
+if exists id:"like_button"
+    human_click id:"like_button", offset_min=5, offset_max=15, delay_min=0.2, delay_max=0.5
+end
+
+# 返回（模拟用户返回）
+log "7. 返回上一页"
+human_click 100, 100         # 点击返回按钮位置
+wait 2
+
+# 继续浏览
+log "8. 继续浏览"
+loop 3
+    human_click id:"article_item", offset_min=3, offset_max=10
+    wait 3
+    back
+    wait 1
+end
+
+# 返回主页
+log "9. 返回主页"
+home
+wait 1
+
+log "=== 人类行为模拟完成 ==="
+log "脚本执行完毕，模拟真实用户完成了一次完整的应用使用流程"
+```
+
+### 脚本调试技巧
+
+#### 1. 启用详细日志
+
+```bash
+# 在脚本开头启用详细日志
+log "=== 脚本开始执行 ==="
+log "当前设备状态检查"
+
+# 检查设备连接状态（通过 API 检查，这里仅作为日志示例）
+
+# 记录关键步骤
+log "步骤 1: 启动应用"
+start_app "com.example.app"
+log "应用已启动"
+
+log "步骤 2: 等待界面"
+wait 2
+log "界面已加载"
+```
+
+#### 2. 截图调试
+
+```bash
+# 在关键位置截图
+click id:"button"
+wait 2
+shell "screencap -p /sdcard/debug.png"
+
+# 出错时截图
+try
+    click id:"maybe_exist"
+catch
+    log "操作失败，截图保存"
+    shell "screencap -p /sdcard/error.png"
+end
+```
+
+#### 3. 界面结构导出
+
+```bash
+# 导出当前界面 XML 结构
+set $xml = dump_hierarchy
+log "当前界面结构:"
+log $xml
+
+# 保存到文件
+shell "echo '${xml}' > /sdcard/hierarchy.xml"
+```
+
+#### 4. 逐步执行
+
+```bash
+# 使用注释标记执行进度
+# [STEP 1] 启动应用
+start_app "com.example.app"
+wait 2
+
+# [STEP 2] 检查界面
+if exists id:"main"
+    log "[PASS] 主界面已显示"
+else
+    log "[FAIL] 主界面未显示"
+end
+
+# [STEP 3] 执行操作
+click id:"button"
+log "[PASS] 按钮已点击"
 ```
 
 ### 脚本 API
@@ -982,12 +1983,10 @@ get_text xpath:"//Button[@text='提交']"
 # 获取元素信息并保存到变量
 set $info = get_info id:"button_id"
 
-# 可以在条件判断中使用
-if $info.enabled
-    log "按钮可用"
+# 检查元素是否存在后操作
+if $info
+    log "元素信息: $info"
     click id:"button_id"
-else
-    log "按钮不可用"
 end
 ```
 
@@ -1000,9 +1999,8 @@ end
 set $element = find_element text:"确定"
 
 # 检查元素是否存在
-if $element.exists
-    log "找到元素: $element.text"
-    log "边界: $element.bounds"
+if $element
+    log "找到元素"
 else
     log "未找到元素"
 end
@@ -1045,11 +2043,10 @@ end
 ```bash
 # 导出界面结构
 set $xml = dump_hierarchy
-log "界面 XML 长度: $xml.length"
+log "界面 XML 已导出"
 
 # 保存到文件（通过shell命令）
-log $xml > /sdcard/hierarchy.xml
-shell "cat /sdcard/hierarchy.xml"
+shell "echo '${xml}' > /sdcard/hierarchy.xml"
 ```
 
 ### 实用示例
@@ -1060,18 +2057,12 @@ shell "cat /sdcard/hierarchy.xml"
 # 获取按钮信息
 set $btn = get_info id:"com.example:id/submit"
 
-# 检查按钮是否可用
-if $btn.exists and $btn.enabled
-    # 检查按钮文本
-    set $text = get_text id:"com.example:id/submit"
-    if $text == "提交"
-        click id:"com.example:id/submit"
-        log "点击提交按钮"
-    else
-        log "按钮文本不符合预期"
-    end
+# 检查按钮是否存在
+if exists id:"com.example:id/submit"
+    click id:"com.example:id/submit"
+    log "点击提交按钮"
 else
-    log "按钮不存在或不可用"
+    log "按钮不存在"
 end
 ```
 
@@ -1083,9 +2074,7 @@ start_app "com.example.app"
 wait 2
 
 # 检查登录按钮是否存在
-set $login_btn = get_info id:"com.example:id/login"
-
-if $login_btn.exists
+if exists id:"com.example:id/login"
     log "在登录页面"
     input id:"username" "test@example.com"
     input id:"password" "password123"
@@ -1099,12 +2088,10 @@ end
 
 ```bash
 # 查找确定按钮
-set $confirm = find_element text:"确定"
-
-if $confirm.exists
-    # 获取按钮边界
-    set $bounds = get_bounds id:"confirm_button"
-    log "按钮位置: $bounds"
+if exists text:"确定"
+    # 获取按钮信息
+    set $info = get_info text:"确定"
+    log "按钮信息: $info"
     
     # 点击按钮
     click text:"确定"
