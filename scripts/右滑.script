@@ -1,0 +1,3 @@
+# 右滑.script
+
+human_drag 913,844 276,833 trajectory=linear_jitter duration=0.3 num_points=20 offset_min=25 offset_max=50
