@@ -1167,7 +1167,7 @@ async function handleClick() {
       if (response.result?.exists && response.result?.center_x != null && response.result?.center_y != null) {
         const x = response.result.center_x
         const y = response.result.center_y
-        response = await inputApi.execute('click', { x, y })
+        response = await inputApi.clickByPoint(x, y)
       } else {
         ElMessage.warning('元素不存在，无法点击')
         return

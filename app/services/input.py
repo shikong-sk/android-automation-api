@@ -31,6 +31,29 @@ class InputService(AutomationService):
     所有方法返回布尔值，表示操作是否成功执行。
     """
 
+    def wait_for_idle(self, timeout: float = 1.0) -> bool:
+        """
+        等待设备 UI 线程空闲
+        
+        在执行关键操作前调用，等待界面渲染和事件处理完成。
+        使用 uiautomator2 的 wait.idle() 方法实现。
+
+        Args:
+            timeout: 最大等待时间（秒），默认为 1.0 秒
+
+        Returns:
+            bool: 等待成功返回 True，超时返回 False
+        """
+        try:
+            # uiautomator2 提供 wait.idle() 方法等待 UI 线程空闲
+            self.device.wait.idle(timeout=timeout)
+            return True
+        except Exception as e:
+            logger.warning(f"等待设备空闲失败: {e}，使用备用方案")
+            # 备用方案：简单休眠
+            self.device.sleep(timeout)
+            return False
+
     def clear_text(self, resource_id: str) -> bool:
         """
         清除指定元素的文本内容
@@ -808,7 +831,7 @@ class InputService(AutomationService):
                     "center_x": center_x,
                     "center_y": center_y,
                 }
-            return {"exists": True, "bounds": bounds_str}
+            return {"exists": True, "bounds": bounds}
         except Exception as e:
             logger.error(f"获取元素边界失败: {e}")
             return None
