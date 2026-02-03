@@ -41,13 +41,15 @@
             <el-tag v-if="currentScript" size="small">{{ currentScript }}</el-tag>
           </div>
         </template>
-        <el-input
+        <CodeEditor
           v-model="scriptContent"
-          type="textarea"
-          :rows="20"
           placeholder="在此输入脚本内容..."
-          class="font-mono"
-          style="font-family: monospace;"
+          :height="400"
+          font-family="monospace"
+          font-size="14px"
+          tab-size="2"
+          show-line-numbers
+          class="editor-area"
         />
       </el-card>
 
@@ -1007,6 +1009,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { scriptApi } from '@/api'
+import CodeEditor from './CodeEditor.vue'
 
 const scripts = ref([])
 const currentScript = ref('')
