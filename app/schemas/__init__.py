@@ -18,6 +18,7 @@ from .action import (
     HumanDoubleClickRequest,
     HumanLongPressRequest,
     HumanDragRequest,
+    ClickByPointRequest,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "HumanDoubleClickRequest",
     "HumanLongPressRequest",
     "HumanDragRequest",
+    "ClickByPointRequest",
 ]

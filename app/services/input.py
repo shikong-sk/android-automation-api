@@ -264,6 +264,25 @@ class InputService(AutomationService):
         self.device.swipe(x1, y1, x2, y2)
         return True
 
+    def click_by_point(self, x: int, y: int) -> bool:
+        """
+        通过坐标点击
+
+        在指定坐标位置执行点击操作。
+
+        Args:
+            x: 目标 x 坐标
+            y: 目标 y 坐标
+
+        Returns:
+            bool: 点击是否成功
+        """
+        try:
+            self.device.click(x, y)
+            return True
+        except Exception:
+            return False
+
     def find_element_by_id(self, resource_id: str) -> Optional[Dict[str, Any]]:
         """
         通过 resource-id 查找元素

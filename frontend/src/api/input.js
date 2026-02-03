@@ -17,6 +17,10 @@ export const inputApi = {
     return request.post('/input/click-by-xpath', null, { params: { xpath } })
   },
 
+  clickByPoint(x, y) {
+    return request.post('/input/click-by-point', { x, y })
+  },
+
   existsByText(text) {
     return request.get('/input/exists-by-text', { params: { text } })
   },

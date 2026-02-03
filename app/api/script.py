@@ -151,8 +151,6 @@ def execute_script(script: ScriptContent) -> ExecutionResult:
         ExecutionResult: 执行结果
     """
     manager = get_device_manager()
-    if not manager.is_connected():
-        raise HTTPException(status_code=400, detail="Device not connected")
 
     executor = ScriptExecutor(manager)
     result = executor.execute_script(
@@ -174,8 +172,6 @@ async def execute_script_stream(script: ScriptContent):
         StreamingResponse: SSE 事件流
     """
     manager = get_device_manager()
-    if not manager.is_connected():
-        raise HTTPException(status_code=400, detail="Device not connected")
 
     # 创建执行会话
     session_id = str(uuid.uuid4())
@@ -296,8 +292,6 @@ def execute_script_file(name: str, variables: Optional[Dict[str, Any]] = None) -
         raise HTTPException(status_code=404, detail=f"Script not found: {name}")
 
     manager = get_device_manager()
-    if not manager.is_connected():
-        raise HTTPException(status_code=400, detail="Device not connected")
 
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()

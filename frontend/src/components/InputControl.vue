@@ -31,110 +31,128 @@
           
           <el-tabs v-model="activeTab" class="input-tabs">
             <el-tab-pane label="点击元素" name="click">
-              <div class="space-y-4">
-                <div class="flex gap-2">
-              <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
-                <el-option label="By ID" value="id" />
-                <el-option label="By Text" value="text" />
-                <el-option label="By Class" value="class" />
-                <el-option label="By XPath" value="xpath" />
-              </el-select>
-              <el-input
-                v-model="clickLocateValue"
-                :placeholder="clickPlaceholder"
-                clearable
-                class="flex-1"
-              >
-                <template #append v-if="clickLocateType === 'xpath'">
-                  <el-button @click="openXPathGenerator('click')">
-                    生成
-                  </el-button>
-                </template>
-              </el-input>
+          <div class="space-y-4">
+            <!-- 定位方式选择 -->
+            <div class="mb-3">
+              <el-radio-group v-model="clickLocateMode">
+                <el-radio value="selector">选择器定位</el-radio>
+                <el-radio value="coordinate">坐标定位</el-radio>
+              </el-radio-group>
             </div>
 
-            <!-- 高级定位选项 -->
-            <el-collapse v-model="clickAdvancedExpanded">
-              <el-collapse-item title="高级定位（父级/兄弟/偏移）" name="advanced">
-                <div class="space-y-4">
-                  <!-- 父级定位 -->
-                  <div class="border rounded p-3 bg-gray-50">
-                    <div class="text-sm font-medium text-gray-700 mb-2">父级元素定位</div>
-                    <div class="flex gap-2">
-                      <el-select v-model="clickParentType" placeholder="父级类型" class="w-28">
-                        <el-option label="By ID" value="id" />
-                        <el-option label="By Text" value="text" />
-                        <el-option label="By XPath" value="xpath" />
-                      </el-select>
-                      <el-input
-                        v-model="clickParentValue"
-                        placeholder="父元素定位值"
-                        clearable
-                        class="flex-1"
-                      >
-                        <template #append v-if="clickParentType === 'xpath'">
-                          <el-button @click="openXPathGenerator('clickParent')">
-                            生成
-                          </el-button>
-                        </template>
-                      </el-input>
-                    </div>
-                  </div>
+            <!-- 选择器定位 -->
+            <div v-if="clickLocateMode === 'selector'" class="space-y-4">
+              <div class="flex gap-2">
+                <el-select v-model="clickLocateType" placeholder="查找方式" class="w-32">
+                  <el-option label="By ID" value="id" />
+                  <el-option label="By Text" value="text" />
+                  <el-option label="By Class" value="class" />
+                  <el-option label="By XPath" value="xpath" />
+                </el-select>
+                <el-input
+                  v-model="clickLocateValue"
+                  :placeholder="clickPlaceholder"
+                  clearable
+                  class="flex-1"
+                >
+                  <template #append v-if="clickLocateType === 'xpath'">
+                    <el-button @click="openXPathGenerator('click')">
+                      生成
+                    </el-button>
+                  </template>
+                </el-input>
+              </div>
 
-                  <!-- 兄弟元素定位 -->
-                  <div class="border rounded p-3 bg-gray-50">
-                    <div class="text-sm font-medium text-gray-700 mb-2">兄弟元素定位</div>
-                    <div class="flex gap-2 mb-2">
-                      <el-select v-model="clickSiblingType" placeholder="兄弟类型" class="w-28">
-                        <el-option label="By ID" value="id" />
-                        <el-option label="By Text" value="text" />
-                        <el-option label="By XPath" value="xpath" />
-                      </el-select>
-                      <el-input
-                        v-model="clickSiblingValue"
-                        placeholder="兄弟元素定位值"
-                        clearable
-                        class="flex-1"
-                      >
-                        <template #append v-if="clickSiblingType === 'xpath'">
-                          <el-button @click="openXPathGenerator('clickSibling')">
-                            生成
-                          </el-button>
-                        </template>
-                      </el-input>
-                    </div>
-                    <el-radio-group v-model="clickSiblingRelation" size="small">
-                      <el-radio value="following">之后的兄弟</el-radio>
-                      <el-radio value="preceding">之前的兄弟</el-radio>
-                    </el-radio-group>
-                  </div>
-
-                  <!-- 坐标偏移 -->
-                  <div class="border rounded p-3 bg-gray-50">
-                    <div class="text-sm font-medium text-gray-700 mb-2">坐标偏移</div>
-                    <div class="flex gap-4">
-                      <div>
-                        <span class="text-xs text-gray-500">X 偏移:</span>
-                        <el-input-number v-model="clickOffsetX" :min="-500" :max="500" size="small" class="ml-2 w-24" />
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500">Y 偏移:</span>
-                        <el-input-number v-model="clickOffsetY" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+              <!-- 高级定位选项 -->
+              <el-collapse v-model="clickAdvancedExpanded">
+                <el-collapse-item title="高级定位（父级/兄弟/偏移）" name="advanced">
+                  <div class="space-y-4">
+                    <!-- 父级定位 -->
+                    <div class="border rounded p-3 bg-gray-50">
+                      <div class="text-sm font-medium text-gray-700 mb-2">父级元素定位</div>
+                      <div class="flex gap-2">
+                        <el-select v-model="clickParentType" placeholder="父级类型" class="w-28">
+                          <el-option label="By ID" value="id" />
+                          <el-option label="By Text" value="text" />
+                          <el-option label="By XPath" value="xpath" />
+                        </el-select>
+                        <el-input
+                          v-model="clickParentValue"
+                          placeholder="父元素定位值"
+                          clearable
+                          class="flex-1"
+                        >
+                          <template #append v-if="clickParentType === 'xpath'">
+                            <el-button @click="openXPathGenerator('clickParent')">
+                              生成
+                            </el-button>
+                          </template>
+                        </el-input>
                       </div>
                     </div>
-                    <div class="text-xs text-gray-400 mt-1">
-                      正值向右/向下，负值向左/向上
+
+                    <!-- 兄弟元素定位 -->
+                    <div class="border rounded p-3 bg-gray-50">
+                      <div class="text-sm font-medium text-gray-700 mb-2">兄弟元素定位</div>
+                      <div class="flex gap-2 mb-2">
+                        <el-select v-model="clickSiblingType" placeholder="兄弟类型" class="w-28">
+                          <el-option label="By ID" value="id" />
+                          <el-option label="By Text" value="text" />
+                          <el-option label="By XPath" value="xpath" />
+                        </el-select>
+                        <el-input
+                          v-model="clickSiblingValue"
+                          placeholder="兄弟元素定位值"
+                          clearable
+                          class="flex-1"
+                        >
+                          <template #append v-if="clickSiblingType === 'xpath'">
+                            <el-button @click="openXPathGenerator('clickSibling')">
+                              生成
+                            </el-button>
+                          </template>
+                        </el-input>
+                      </div>
+                      <el-radio-group v-model="clickSiblingRelation" size="small">
+                        <el-radio value="following">之后的兄弟</el-radio>
+                        <el-radio value="preceding">之前的兄弟</el-radio>
+                      </el-radio-group>
+                    </div>
+
+                    <!-- 坐标偏移 -->
+                    <div class="border rounded p-3 bg-gray-50">
+                      <div class="text-sm font-medium text-gray-700 mb-2">坐标偏移</div>
+                      <div class="flex gap-4">
+                        <div>
+                          <span class="text-xs text-gray-500">X 偏移:</span>
+                          <el-input-number v-model="clickOffsetX" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                        </div>
+                        <div>
+                          <span class="text-xs text-gray-500">Y 偏移:</span>
+                          <el-input-number v-model="clickOffsetY" :min="-500" :max="500" size="small" class="ml-2 w-24" />
+                        </div>
+                      </div>
+                      <div class="text-xs text-gray-400 mt-1">
+                        正值向右/向下，负值向左/向上
+                      </div>
                     </div>
                   </div>
-                </div>
-              </el-collapse-item>
-            </el-collapse>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
 
+            <!-- 坐标定位 -->
+            <div v-else class="flex gap-2">
+              <el-input-number v-model="clickPointX" :min="0" placeholder="X 坐标" controls-position="right" class="w-36" />
+              <el-input-number v-model="clickPointY" :min="0" placeholder="Y 坐标" controls-position="right" class="w-36" />
+            </div>
+
+            <!-- 操作按钮 -->
             <div class="flex gap-2">
-              <el-button type="primary" :disabled="!clickLocateValue" @click="handleClick">
+              <el-button type="primary" :disabled="!isClickValid" @click="handleClick">
                 点击元素
               </el-button>
-              <el-button :disabled="!clickLocateValue" @click="handleExists">
+              <el-button v-if="clickLocateMode === 'selector'" :disabled="!clickLocateValue" @click="handleExists">
                 检查存在
               </el-button>
             </div>
@@ -505,6 +523,20 @@
                 </div>
               </div>
 
+              <!-- 交换起点和终点按钮 -->
+              <div class="flex justify-center my-2">
+                <el-button 
+                  type="primary" 
+                  plain
+                  circle
+                  :disabled="!canSwapDragPoints"
+                  @click="swapDragStartEnd"
+                  title="交换起点和终点"
+                >
+                  ⇅
+                </el-button>
+              </div>
+
               <!-- 终点 -->
               <div class="border rounded-lg p-4 bg-gray-50">
                 <div class="text-sm font-medium text-gray-700 mb-3">终点定位</div>
@@ -793,6 +825,9 @@ const layoutMode = ref('split')
 const screenPreviewRef = ref(null)
 const clickLocateType = ref('id')
 const clickLocateValue = ref('')
+const clickLocateMode = ref('selector') // 'selector' 或 'coordinate'
+const clickPointX = ref(null)
+const clickPointY = ref(null)
 const clickAdvancedExpanded = ref([])
 const clickParentType = ref('id')
 const clickParentValue = ref('')
@@ -852,6 +887,7 @@ const humanDragTrajectory = ref('bezier')
 const humanDragSpeedMode = ref('ease_in_out')
 const humanDragNumPoints = ref(50)
 const humanDragDuration = ref(1.0)
+const isSettingDragEnd = ref(false) // 追踪当前是否应该设置终点
 
 // 高级配置
 const humanAdvancedExpanded = ref([])
@@ -911,6 +947,57 @@ const isHumanActionValid = computed(() => {
       : !!humanSelectorValue.value
   }
 })
+
+const canSwapDragPoints = computed(() => {
+  const hasStart = humanDragStartMode.value === 'coordinate'
+    ? (humanDragStartX.value != null && humanDragStartY.value != null)
+    : !!humanDragStartSelectorValue.value
+  const hasEnd = humanDragEndMode.value === 'coordinate'
+    ? (humanDragEndX.value != null && humanDragEndY.value != null)
+    : !!humanDragEndSelectorValue.value
+  return hasStart && hasEnd
+})
+
+function swapDragStartEnd() {
+  const tempX = humanDragStartX.value
+  const tempY = humanDragStartY.value
+  const tempMode = humanDragStartMode.value
+  const tempSelectorType = humanDragStartSelectorType.value
+  const tempSelectorValue = humanDragStartSelectorValue.value
+
+  humanDragStartX.value = humanDragEndX.value
+  humanDragStartY.value = humanDragEndY.value
+  humanDragStartMode.value = humanDragEndMode.value
+  humanDragStartSelectorType.value = humanDragEndSelectorType.value
+  humanDragStartSelectorValue.value = humanDragEndSelectorValue.value
+
+  humanDragEndX.value = tempX
+  humanDragEndY.value = tempY
+  humanDragEndMode.value = tempMode
+  humanDragEndSelectorType.value = tempSelectorType
+  humanDragEndSelectorValue.value = tempSelectorValue
+
+  ElMessage.success('已交换起点和终点')
+
+  if (screenPreviewRef.value && 
+      humanDragStartX.value && 
+      humanDragStartY.value &&
+      humanDragEndX.value && 
+      humanDragEndY.value) {
+    screenPreviewRef.value.showDragPreview(
+      humanDragStartX.value,
+      humanDragStartY.value,
+      humanDragEndX.value,
+      humanDragEndY.value,
+      {
+        trajectoryType: humanDragTrajectory.value,
+        duration: humanDragDuration.value * 1000,
+        speedMode: humanDragSpeedMode.value,
+        numPoints: humanDragNumPoints.value
+      }
+    )
+  }
+}
 
 function openXPathGenerator(target) {
   xpathInsertTarget.value = target
@@ -986,11 +1073,25 @@ const clickPlaceholder = computed(() => {
   return getPlaceholder(clickLocateType.value)
 })
 
+// 验证点击操作是否有效
+const isClickValid = computed(() => {
+  if (clickLocateMode.value === 'coordinate') {
+    return clickPointX.value != null && clickPointY.value != null &&
+           !isNaN(clickPointX.value) && !isNaN(clickPointY.value)
+  }
+  return !!clickLocateValue.value
+})
+
 async function handleClick() {
   try {
     let response
 
-    if (clickParentValue.value || clickSiblingValue.value || clickOffsetX.value !== 0 || clickOffsetY.value !== 0) {
+    // 坐标定位模式
+    if (clickLocateMode.value === 'coordinate') {
+      response = await inputApi.clickByPoint(clickPointX.value, clickPointY.value)
+    }
+    // 选择器定位 + 高级选项
+    else if (clickParentValue.value || clickSiblingValue.value || clickOffsetX.value !== 0 || clickOffsetY.value !== 0) {
       const options = {
         parent_selector_type: clickParentValue.value ? clickParentType.value : null,
         parent_selector_value: clickParentValue.value || null,
@@ -1009,7 +1110,9 @@ async function handleClick() {
         ElMessage.warning('元素不存在，无法点击')
         return
       }
-    } else {
+    }
+    // 简单的选择器定位
+    else {
       switch (clickLocateType.value) {
         case 'id':
           response = await inputApi.click(clickLocateValue.value)
@@ -1029,7 +1132,7 @@ async function handleClick() {
     if (response.success) {
       ElMessage.success('点击成功')
     } else {
-      ElMessage.warning('元素不存在，无法点击')
+      ElMessage.warning('点击失败')
     }
   } catch (err) {
     ElMessage.error('点击失败: ' + err.message)
@@ -1912,15 +2015,23 @@ function copyDslScript() {
 
 function handleCoordinateClick(coordinate) {
   console.log('Coordinate clicked:', coordinate)
-  
+
   if (activeTab.value === 'click') {
-    clickLocateValue.value = `${coordinate.x}, ${coordinate.y}`
-    ElMessage.success(`已将坐标 ${coordinate.x}, ${coordinate.y} 填入点击位置`)
+    if (clickLocateMode.value === 'coordinate') {
+      clickPointX.value = coordinate.x
+      clickPointY.value = coordinate.y
+      ElMessage.success(`已将坐标 ${coordinate.x}, ${coordinate.y} 填入，点击元素执行点击`)
+    } else {
+      clickLocateValue.value = `${coordinate.x}, ${coordinate.y}`
+      ElMessage.success(`已将坐标 ${coordinate.x}, ${coordinate.y} 填入`)
+    }
   } else if (activeTab.value === 'human') {
     if (humanActionType.value === 'drag') {
-      if (!humanDragStartX.value || !humanDragStartY.value) {
+      if (!isSettingDragEnd.value) {
         humanDragStartX.value = coordinate.x
         humanDragStartY.value = coordinate.y
+        humanDragStartMode.value = 'coordinate'
+        isSettingDragEnd.value = true
         ElMessage.success(`已将起点坐标设置为 ${coordinate.x}, ${coordinate.y}`)
         
         // 起点标记动画
@@ -1931,6 +2042,7 @@ function handleCoordinateClick(coordinate) {
         humanDragEndX.value = coordinate.x
         humanDragEndY.value = coordinate.y
         humanDragEndMode.value = 'coordinate'
+        isSettingDragEnd.value = false
         ElMessage.success(`已将终点坐标设置为 ${coordinate.x}, ${coordinate.y}`)
         
         // 终点标记动画
@@ -1990,9 +2102,33 @@ watch(humanDragEndMode, (newVal) => {
   }
 })
 
+// 监听人类操作类型变化，重置拖拽坐标设置状态
+watch(humanActionType, (newVal) => {
+  if (newVal === 'drag') {
+    isSettingDragEnd.value = false
+  }
+})
+
+// 监听拖拽坐标变化，自动重置设置状态
+watch([humanDragStartX, humanDragStartY, humanDragEndX, humanDragEndY], () => {
+  if (!humanDragStartX.value && !humanDragStartY.value && !humanDragEndX.value && !humanDragEndY.value) {
+    isSettingDragEnd.value = false
+  }
+})
+
 watch(humanTargetMode, (newVal) => {
   if (newVal === 'coordinate') {
     humanSelectorValue.value = ''
+  }
+})
+
+// 监听点击定位模式切换
+watch(clickLocateMode, (newVal) => {
+  if (newVal === 'coordinate') {
+    clickLocateValue.value = ''
+  } else {
+    clickPointX.value = null
+    clickPointY.value = null
   }
 })
 </script>

@@ -62,6 +62,15 @@ class TokenType(Enum):
     BREAK = auto()
     CONTINUE = auto()
 
+    # 设备连接命令关键字
+    CONNECT = auto()
+    GET_STATUS = auto()
+    DISCONNECT = auto()
+
+    # 应用信息命令关键字
+    GET_APP_VERSION = auto()
+    GET_CURRENT_APP = auto()
+
     # 选择器类型
     SELECTOR_ID = auto()
     SELECTOR_TEXT = auto()
@@ -253,6 +262,15 @@ class ScriptLexer:
         "human_double_click": TokenType.HUMAN_DOUBLE_CLICK,
         "human_long_press": TokenType.HUMAN_LONG_PRESS,
         "human_drag": TokenType.HUMAN_DRAG,
+
+        # 设备连接命令关键字
+        "connect": TokenType.CONNECT,
+        "get_status": TokenType.GET_STATUS,
+        "disconnect": TokenType.DISCONNECT,
+
+        # 应用信息命令关键字
+        "get_app_version": TokenType.GET_APP_VERSION,
+        "get_current_app": TokenType.GET_CURRENT_APP,
     }
 
     SELECTOR_KEYWORDS: Dict[str, TokenType] = {
@@ -521,6 +539,15 @@ class ScriptParser:
         TokenType.HUMAN_DOUBLE_CLICK,
         TokenType.HUMAN_LONG_PRESS,
         TokenType.HUMAN_DRAG,
+
+        # 设备连接命令
+        TokenType.CONNECT,
+        TokenType.GET_STATUS,
+        TokenType.DISCONNECT,
+
+        # 应用信息命令
+        TokenType.GET_APP_VERSION,
+        TokenType.GET_CURRENT_APP,
     }
 
     SELECTOR_TOKENS = {

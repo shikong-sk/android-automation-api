@@ -895,10 +895,12 @@ human_long_press 500, 800, duration_min=1.0, duration_max=2.0</pre>
               
               <h5 class="font-medium mt-3 mb-2 text-sm">参数说明</h5>
               <table class="w-full text-xs bg-purple-100 rounded">
-                <tr><td class="p-1">offset_min/max</td><td class="p-1">随机偏移范围（像素），默认 3/10</td></tr>
-                <tr><td class="p-1">delay_min/max</td><td class="p-1">操作前延迟范围（秒），默认 0.05/0.3</td></tr>
-                <tr><td class="p-1">duration_min/max</td><td class="p-1">按压时长范围（秒），默认 0.05/0.15</td></tr>
-                <tr><td class="p-1">interval_min/max</td><td class="p-1">双击间隔范围（秒），默认 0.1/0.2</td></tr>
+                <tbody>
+                  <tr><td class="p-1">offset_min/max</td><td class="p-1">随机偏移范围（像素），默认 3/10</td></tr>
+                  <tr><td class="p-1">delay_min/max</td><td class="p-1">操作前延迟范围（秒），默认 0.05/0.3</td></tr>
+                  <tr><td class="p-1">duration_min/max</td><td class="p-1">按压时长范围（秒），默认 0.05/0.15</td></tr>
+                  <tr><td class="p-1">interval_min/max</td><td class="p-1">双击间隔范围（秒），默认 0.1/0.2</td></tr>
+                </tbody>
               </table>
             </div>
             <div>
@@ -923,11 +925,13 @@ human_drag text:"文件A", text:"文件夹B"</pre>
               
               <h5 class="font-medium mt-3 mb-2 text-sm">拖拽参数</h5>
               <table class="w-full text-xs bg-purple-100 rounded">
-                <tr><td class="p-1">duration</td><td class="p-1">拖拽总时间（秒），默认 1.0</td></tr>
-                <tr><td class="p-1">trajectory</td><td class="p-1">bezier(贝塞尔曲线), linear_jitter(直线抖动)</td></tr>
-                <tr><td class="p-1">speed</td><td class="p-1">ease_in_out, ease_in, ease_out, linear, random</td></tr>
-                <tr><td class="p-1">num_points</td><td class="p-1">轨迹采样点数量，默认 50</td></tr>
-                <tr><td class="p-1">jitter_min/max</td><td class="p-1">直线轨迹抖动范围（像素），默认 1/5</td></tr>
+                <tbody>
+                  <tr><td class="p-1">duration</td><td class="p-1">拖拽总时间（秒），默认 1.0</td></tr>
+                  <tr><td class="p-1">trajectory</td><td class="p-1">bezier(贝塞尔曲线), linear_jitter(直线抖动)</td></tr>
+                  <tr><td class="p-1">speed</td><td class="p-1">ease_in_out, ease_in, ease_out, linear, random</td></tr>
+                  <tr><td class="p-1">num_points</td><td class="p-1">轨迹采样点数量，默认 50</td></tr>
+                  <tr><td class="p-1">jitter_min/max</td><td class="p-1">直线轨迹抖动范围（像素），默认 1/5</td></tr>
+                </tbody>
               </table>
             </div>
           </div>

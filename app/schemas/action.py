@@ -122,6 +122,17 @@ class HumanLongPressRequest(BaseModel):
     delay_max: float = Field(0.2, description="操作前延迟最大值（秒）")
 
 
+class ClickByPointRequest(BaseModel):
+    """
+    通过坐标点击请求模型
+
+    通过屏幕坐标点直接点击目标位置。
+    """
+
+    x: int = Field(..., description="目标 x 坐标", ge=0)
+    y: int = Field(..., description="目标 y 坐标", ge=0)
+
+
 class HumanDragRequest(BaseModel):
     """
     人类模拟拖拽请求模型

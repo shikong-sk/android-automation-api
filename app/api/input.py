@@ -15,6 +15,7 @@ from app.schemas import (
     HumanDoubleClickRequest,
     HumanLongPressRequest,
     HumanDragRequest,
+    ClickByPointRequest,
 )
 from typing import Literal, Optional
 
@@ -103,6 +104,30 @@ def click_by_xpath(
     """
     result = input_service.click_by_xpath(xpath)
     return ActionResponse(success=result, result={"clicked": xpath})
+
+
+@router.post("/click-by-point", response_model=ActionResponse)
+def click_by_point(
+    request: ClickByPointRequest,
+    input_service: InputService = Depends(get_input_service),
+):
+    """
+    通过坐标点击
+
+    在指定坐标位置执行点击操作。
+
+    Args:
+        request: 包含目标坐标的请求体
+
+    Returns:
+        ActionResponse: 操作结果响应
+    """
+    result = input_service.click_by_point(request.x, request.y)
+    return ActionResponse(
+        success=result,
+        result={"x": request.x, "y": request.y},
+        message="点击成功" if result else "点击失败",
+    )
 
 
 @router.get("/exists-by-text", response_model=ActionResponse)

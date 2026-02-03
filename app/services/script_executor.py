@@ -81,16 +81,70 @@ class ScriptExecutor:
             device_manager: 设备管理器实例
         """
         self.device_manager = device_manager
-        self.device = device_manager.get_device()
 
-        # 初始化各种服务
-        self.input_service = InputService(self.device_manager)
-        self.navigation_service = NavigationService(self.device_manager)
-        self.app_service = AppService(self.device_manager)
-        self.adb_service = AdbService(self.device.serial)
+        # 初始化各种服务（延迟初始化）
+        self._input_service = None
+        self._navigation_service = None
+        self._app_service = None
+        self._adb_service = None
+        self._cached_device = None
 
         # 执行上下文
         self.context: Optional[ExecutionContext] = None
+
+    def _ensure_device(self):
+        """
+        确保设备已连接，如果未连接则自动连接
+        只有在实际需要执行设备操作时才调用此方法
+        """
+        if self._cached_device is None:
+            if self.device_manager.is_connected():
+                self._cached_device = self.device_manager.get_device()
+            else:
+                # 设备未连接，自动连接第一个可用设备
+                self.device_manager.connect()
+                self._cached_device = self.device_manager.get_device()
+        return self._cached_device
+
+    def _ensure_services(self):
+        """确保所有服务已初始化"""
+        if self._input_service is None:
+            self._input_service = InputService(self.device_manager)
+        if self._navigation_service is None:
+            self._navigation_service = NavigationService(self.device_manager)
+        if self._app_service is None:
+            self._app_service = AppService(self.device_manager)
+        if self._adb_service is None:
+            device = self._ensure_device()
+            if device and device.serial:
+                self._adb_service = AdbService(device.serial)
+            else:
+                self._adb_service = AdbService("")
+
+    @property
+    def device(self):
+        """获取设备对象"""
+        return self._cached_device
+
+    @property
+    def input_service(self):
+        self._ensure_services()
+        return self._input_service
+
+    @property
+    def navigation_service(self):
+        self._ensure_services()
+        return self._navigation_service
+
+    @property
+    def app_service(self):
+        self._ensure_services()
+        return self._app_service
+
+    @property
+    def adb_service(self):
+        self._ensure_services()
+        return self._adb_service
 
     def execute_script(
         self,
@@ -293,7 +347,7 @@ class ScriptExecutor:
         elif selector_type == "text":
             return self.device(text=selector_value)
         elif selector_type == "xpath":
-            return self.device.xpath(selector_value)
+            return self._ensure_device().xpath(selector_value)
         elif selector_type == "class":
             return self.device(className=selector_value)
         return None
@@ -325,7 +379,7 @@ class ScriptExecutor:
                 # 坐标点击
                 if len(args) >= 2:
                     x, y = int(args[0]), int(args[1])
-                    self.device.click(x, y)
+                    self._ensure_device().click(x, y)
                     return True
             return False
 
@@ -347,13 +401,13 @@ class ScriptExecutor:
                 element = self._get_element(node.selector_type, node.selector_value)
                 if element and element.exists:
                     element.click()
-                    self.device.sleep(0.3)
+                    self._ensure_device().sleep(0.3)
                     text = str(args[0]) if args else ""
-                    self.device.send_keys(text, clear=False)
+                    self._ensure_device().send_keys(text, clear=False)
                     return True
             elif args:
                 # 直接输入文本
-                self.device.send_keys(str(args[0]), clear=False)
+                self._ensure_device().send_keys(str(args[0]), clear=False)
                 return True
             return False
 
@@ -363,10 +417,10 @@ class ScriptExecutor:
                 element = self._get_element(node.selector_type, node.selector_value)
                 if element and element.exists:
                     element.click()
-                    self.device.clear_text()
+                    self._ensure_device().clear_text()
                     return True
             else:
-                self.device.clear_text()
+                self._ensure_device().clear_text()
                 return True
             return False
 
@@ -545,6 +599,56 @@ class ScriptExecutor:
         # 人类模拟拖拽
         elif command == "human_drag":
             return self._execute_human_drag(node, args)
+
+        # ============ 设备连接命令 ============
+
+        elif command == "connect":
+            if args:
+                # 连接指定设备（序列号或IP）
+                device_serial = str(args[0])
+                info = self.device_manager.connect(device_serial)
+                self.log(f"Connected to device: {info.serial} ({info.product_name})")
+                return info.serial
+            else:
+                # 自动连接第一个可用设备
+                info = self.device_manager.connect()
+                self.log(f"Auto-connected to device: {info.serial} ({info.product_name})")
+                return info.serial
+
+        elif command == "get_status":
+            if self.device_manager.is_connected():
+                device = self.device_manager.get_device()
+                info = device.info
+                return {
+                    "connected": True,
+                    "serial": device.serial,
+                    "product_name": info.get("productName", "Unknown"),
+                    "api_level": info.get("sdkInt", 0),
+                    "display_rotation": info.get("displayRotation", 0),
+                    "display_size": info.get("displaySize"),
+                }
+            else:
+                return {"connected": False}
+
+        elif command == "disconnect":
+            self.device_manager.disconnect()
+            self.log("Device disconnected")
+            return True
+
+        # ============ 应用信息命令 ============
+
+        elif command == "get_app_version":
+            if args:
+                package_name = str(args[0])
+                version = self.app_service.get_app_version(package_name)
+                self.log(f"App {package_name} version: {version}")
+                return version
+            return None
+
+        elif command == "get_current_app":
+            result = self.app_service.get_current_app()
+            self.log(f"Current app: {result}")
+            return result
 
         else:
             self.log(f"Unknown command: {command}")
@@ -867,15 +971,15 @@ class ScriptExecutor:
         elements = []
 
         if selector_type == "id":
-            all_elements = self.device(resourceId=selector_value)
+            all_elements = self._ensure_device()(resourceId=selector_value)
         elif selector_type == "text":
-            all_elements = self.device(text=selector_value)
+            all_elements = self._ensure_device()(text=selector_value)
         elif selector_type == "class":
-            all_elements = self.device(className=selector_value)
+            all_elements = self._ensure_device()(className=selector_value)
         elif selector_type == "xpath":
             # xpath 返回XML元素列表，特殊处理
             try:
-                xml_elements = self.device.xpath(selector_value).all()
+                xml_elements = self._ensure_device().xpath(selector_value).all()
                 for xml_elem in xml_elements:
                     attrs = xml_elem.attrib
                     elements.append(
