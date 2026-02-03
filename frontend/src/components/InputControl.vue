@@ -809,7 +809,10 @@
   </div>
 
   <!-- 右侧：屏幕预览（仅在分栏模式下显示） -->
-  <div v-if="layoutMode === 'split'" class="w-1/2 min-w-[400px]">
+  <div 
+    v-if="layoutMode === 'split'" 
+    class="w-1/2 min-w-[400px] sticky top-0 self-start max-h-screen overflow-y-auto"
+  >
     <ScreenPreview
       ref="screenPreviewRef"
       :auto-refresh-interval="5000"
