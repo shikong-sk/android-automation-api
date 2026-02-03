@@ -1,0 +1,3 @@
+# 上滑.script
+
+human_drag 531,1920 538,282 trajectory=linear_jitter duration=0.2 num_points=15

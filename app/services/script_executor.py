@@ -848,7 +848,10 @@ class ScriptExecutor:
 
             # 执行子脚本
             result = self.execute_script(
-                source, variables=child_variables, script_dir=os.path.dirname(script_path)
+                source,
+                variables=child_variables,
+                script_dir=os.path.dirname(script_path),
+                log_callback=self.context.log_callback,
             )
 
             # 合并日志
