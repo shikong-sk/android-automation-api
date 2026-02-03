@@ -666,8 +666,18 @@
               </el-collapse-item>
             </el-collapse>
 
-            <!-- 执行按钮 -->
+            <!-- 预览和执行按钮 -->
             <div class="flex gap-2 mt-4">
+              <el-button 
+                v-if="humanActionType === 'drag'"
+                type="warning" 
+                plain
+                :disabled="!isHumanActionValid" 
+                @click="previewHumanDrag"
+              >
+                <el-icon class="mr-1"><Eye /></el-icon>
+                预览轨迹
+              </el-button>
               <el-button 
                 type="primary" 
                 :disabled="!isHumanActionValid" 
@@ -816,7 +826,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { inputApi } from '@/api'
-import { Pen, Code, Search, ArrowUp, ArrowDown, Terminal, Copy } from '@vicons/fa'
+import { Pen, Code, Search, ArrowUp, ArrowDown, Terminal, Copy, Eye } from '@vicons/fa'
 import XPathGenerator from './XPathGenerator.vue'
 import ScreenPreview from './ScreenPreview.vue'
 
@@ -839,6 +849,7 @@ const clickOffsetY = ref(0)
 const textLocateType = ref('id')
 const textLocateValue = ref('')
 const textInput = ref('')
+const textAction = ref('IME_ACTION_DONE')
 const swipeDirection = ref('up')
 const swipePercent = ref(0.5)
 const locateValue = ref('')
@@ -996,6 +1007,48 @@ function swapDragStartEnd() {
         numPoints: humanDragNumPoints.value
       }
     )
+  }
+}
+
+function previewHumanDrag() {
+  if (!screenPreviewRef.value) {
+    ElMessage.error('屏幕预览不可用')
+    return
+  }
+  
+  if (humanDragStartX.value && 
+      humanDragStartY.value &&
+      humanDragEndX.value && 
+      humanDragEndY.value) {
+    // 调试信息
+    console.log('[previewHumanDrag] Calling showDragPreview with:', {
+      startX: humanDragStartX.value,
+      startY: humanDragStartY.value,
+      endX: humanDragEndX.value,
+      endY: humanDragEndY.value,
+      options: {
+        trajectoryType: humanDragTrajectory.value,
+        duration: humanDragDuration.value * 1000,
+        speedMode: humanDragSpeedMode.value,
+        numPoints: humanDragNumPoints.value
+      }
+    })
+    
+    screenPreviewRef.value.showDragPreview(
+      humanDragStartX.value,
+      humanDragStartY.value,
+      humanDragEndX.value,
+      humanDragEndY.value,
+      {
+        trajectoryType: humanDragTrajectory.value,
+        duration: humanDragDuration.value * 1000,
+        speedMode: humanDragSpeedMode.value,
+        numPoints: humanDragNumPoints.value
+      }
+    )
+    ElMessage.success('正在预览拖拽轨迹...')
+  } else {
+    ElMessage.error('请先设置起点和终点坐标')
   }
 }
 
