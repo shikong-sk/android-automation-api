@@ -596,10 +596,10 @@
                 <div class="mt-3">
                   <div class="text-xs text-gray-500 mb-1">拖拽时间: {{ humanDragDuration.toFixed(1) }} 秒</div>
                   <el-slider v-model="humanDragDuration" :min="0.2" :max="5.0" :step="0.1" />
-                </div>
+ </div>
                 <div class="mt-3">
                   <div class="text-xs text-gray-500 mb-1">轨迹采样点数量: {{ humanDragNumPoints }}</div>
-                  <el-slider v-model="humanDragNumPoints" :min="10" :max="100" :step="5" />
+                  <el-slider v-model="humanDragNumPoints" :min="10" :max="maxHumanDragNumPoints" :step="5" />
                 </div>
               </div>
             </div>
@@ -940,11 +940,17 @@ const humanActionButtonText = computed(() => {
   return texts[humanActionType.value] || '执行'
 })
 
+// 动态计算轨迹采样点的最大数量（根据拖拽时间限制）
+const maxHumanDragNumPoints = computed(() => {
+  const maxPoints = Math.floor(humanDragDuration.value * 100)
+  return Math.max(10, maxPoints)
+})
+
 // 验证人类模拟操作是否有效
 const isHumanActionValid = computed(() => {
   if (humanActionType.value === 'drag') {
-    // 拖拽需要验证起点和终点
-    const startValid = humanDragStartMode.value === 'coordinate' 
+  // 拖拽需要验证起点和终点
+  const startValid = humanDragStartMode.value === 'coordinate' 
       ? (humanDragStartX.value != null && humanDragStartY.value != null && 
          !isNaN(humanDragStartX.value) && !isNaN(humanDragStartY.value))
       : !!humanDragStartSelectorValue.value
@@ -1960,8 +1966,14 @@ const humanDsl = computed(() => {
     if (humanDragDuration.value !== 1.0) {
       options.push(`duration=${humanDragDuration.value}`)
     }
+    if (humanDragNumPoints.value !== 50) {
+      options.push(`num_points=${humanDragNumPoints.value}`)
+    }
     if (humanOffsetMin.value !== 3 || humanOffsetMax.value !== 10) {
       options.push(`offset_min=${humanOffsetMin.value} offset_max=${humanOffsetMax.value}`)
+    }
+    if (humanJitterMin.value !== 1 || humanJitterMax.value !== 5) {
+      options.push(`jitter_min=${humanJitterMin.value} jitter_max=${humanJitterMax.value}`)
     }
 
     if (options.length > 0) {
@@ -2155,6 +2167,14 @@ watch(humanDragStartMode, (newVal) => {
 watch(humanDragEndMode, (newVal) => {
   if (newVal === 'coordinate') {
     humanDragEndSelectorValue.value = ''
+  }
+})
+
+// 监听拖拽时间变化，动态调整采样点数量限制
+watch(maxHumanDragNumPoints, (newMax) => {
+  if (humanDragNumPoints.value > newMax) {
+    humanDragNumPoints.value = newMax
+    ElMessage.warning(`拖拽时间过短，采样点数量已自动调整为最大值 ${newMax}`)
   }
 })
 
